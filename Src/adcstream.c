@@ -18,8 +18,6 @@ adcbuffer *adcbuf2;
 adcbuffer *pktbuf;
 
 uint32_t t2cap[1];
-uint32_t t2avg;		// cpu clock trim
-
 uint16_t adcthreshold = DETECT_THRES;
 
 unsigned int myfullcomplete = 0;

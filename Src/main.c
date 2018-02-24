@@ -102,7 +102,6 @@ struct netif *netif, *netif2;
 extern const ip4_addr_t *ipaddr;
 uint32_t t1sec = 0;
 extern uint32_t t2cap[1];
-extern uint32_t t2avg;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -1062,8 +1061,8 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {  // every second
 		}
 
 		statuspkt.clktrim = movavg(diff);
-		printf("TIM2 IC Callback CCR3=%08x, [0]%08xu, [1]%08x diff=%u, avg=%08x",
-				htim->Instance->CCR3, t2cap[0], lastcap, diff, t2avg);
+		printf("TIM2 IC Callback CCR3=%08x, [0]%08xu, [1]%08x diff=%u, clktrim=%08x",
+				htim->Instance->CCR3, t2cap[0], lastcap, diff, statuspkt.clktrim);
 		printf(" globaladcavg=%u\n",globaladcavg);
 	}
 	lastcap = t2cap[0];
@@ -1203,7 +1202,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
 	if (htim->Instance == TIM2) {
-		printf("T2P PeriodElapsedCallback %u %u\n", t2cap[0], t2avg);
+		printf("T2P PeriodElapsedCallback %u %u\n", t2cap[0], statuspkt.clktrim);
 		return;
 	}
 	if (htim->Instance == TIM3) {

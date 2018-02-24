@@ -159,7 +159,7 @@ void startudp() {
 				statuspkt.adcpktssent = 0;
 			} else
 			{
-				if (t1sec != talive) {
+				if (t1sec != talive) {		// this is a temporary mech to do this...
 					talive = t1sec;
 					justsent = 1;		// force a status packet
 				}
