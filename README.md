@@ -17,7 +17,12 @@ Samples ADC at approx 2.68Msps and streams ADC readings and GPS to LAN using IPv
 
 - DAC Output (used for test signal generation)  STM32 PA4/D24 Out -> Posible ADC input as above, should be disabled if unused to reduce ADC noise.
 
+###
+- Serial port debug output @ 115Kbaud, no flow control through the USB virtual serial port 
+-- CN5 Tx -> D52/PD6
+-- CN5 Rx -> D53/PD5
 
-### The server side processing is another github project WIP
+
+### The server side processing is another github project (WIP)
 
  
