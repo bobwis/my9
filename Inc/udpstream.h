@@ -10,5 +10,6 @@
 
 void startudp(void);
 
+#define 	SERVER_DESTINATION "lightning.vk4ya.space"
 
 #endif /* UDPSTREAM_H_ */
