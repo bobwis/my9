@@ -1,2 +1,2 @@
-Should add ADC background noise level and the detection threshold offset to the status packet.
+	/* set udp_echo_recv() as callback function for received packets */
 
