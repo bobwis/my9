@@ -1,5 +1,5 @@
 /*
- * neo7m.h
+h * neo7m.h
  *
  *  Created on: 14Jan.,2018
  *      Author: bob
@@ -27,7 +27,7 @@
 //const unsigned char UBXGPS_HEADER[] = { 0xB5, 0x62 };
 
 struct statpkt {
-	uint32_t udpcount;
+	uint32_t udpcount;		// udp packet sent index (24 bits, other 8 bits are packet type)
 
 	struct UbxGpsNavPvt {
 		//        Type  Name           Unit   Description (scaling)
@@ -63,9 +63,9 @@ struct statpkt {
 		unsigned  long  reserved3;  // -      Reserved																	80
 		} NavPvt;
 
-	uint32_t clktrim;
-	uint32_t uid;
-	uint32_t adcpktssent;
+	uint32_t clktrim;		// Nominal 108MHz clock is actually this frequency
+	uint32_t uid;			// only 18 bits used
+	uint32_t adcpktssent;	// Number of ADC pks sent in this trigger event
 
 } statuspkt; __attribute__((aligned(4),packed)) CHALLENGE;
 

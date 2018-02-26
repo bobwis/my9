@@ -18,8 +18,6 @@ adcbuffer *adcbuf2;
 adcbuffer *pktbuf;
 
 uint32_t t2cap[1];
-uint32_t t2avg;		// cpu clock trim
-
 uint16_t adcthreshold = DETECT_THRES;
 
 unsigned int myfullcomplete = 0;
@@ -269,18 +267,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done
 		buf = &((*pktbuf)[UDPBUFSIZE / 4]);
 	}
 	adcbuf16 = &((uint16_t *) *buf)[8];
-// set all the timer info into the buffer headers
-#if 0
-	(*buf)[1] = timestamp;		// 32 bits 'RealTime'
-	((uint16_t *) *buf)[0] = myfullcomplete & 0xffff;// 16 bits 'ADC BufCnt'
-
-	((uint16_t *) *buf)[1] = statuspkt.NavPvt.min << 8 | statuspkt.NavPvt.sec;// 16 bits 'min,sec'
-	(*buf)[2] = t2cap[0];// 32 bit 'Pps Capture' counter val when 1pps pulse ocurred
-	(*buf)[3] = t2avg;// 32 bit avg interval of counts between 1pps pulses
-#endif
 
 //	(*buf)[0] = UDP seq and packet flags	// set in udpstream.c
-	(*buf)[1] = (myfullcomplete & 0x00ffffff) | (statuspkt.NavPvt.sec << 24);// ADC completed packet counter (24 bits)
+	(*buf)[1] = (myfullcomplete & 0xff) | ((statuspkt.uid & 0x3ffff) << 8) | (statuspkt.NavPvt.sec << 26);// ADC completed packet counter (24 bits)
 //	(*buf)[2] = 1pps capture cnt;		// 1pps counter capture  (set by DMA)
 	(*buf)[3] = timestamp;
 
@@ -322,7 +311,7 @@ void startadc() {
 //	adcbufdum1 = pvPortMalloc(UDPBUFSIZE);	//  dummy buffer
 //	adcbufdum2 = pvPortMalloc(UDPBUFSIZE);	//  dummy buffer
 
-	statuspkt.clktrim = 108000000;
+	statuspkt.clktrim = 107000000;
 	statuspkt.adcpktssent = 0;
 
 	printf("Startadc:\n");

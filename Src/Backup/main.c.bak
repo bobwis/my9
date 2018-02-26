@@ -49,12 +49,14 @@
 #include "main.h"
 #include "stm32f7xx_hal.h"
 #include "cmsis_os.h"
+#include "fatfs.h"
 #include "lwip.h"
 #include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
 #include "netif.h"
 #include "adcstream.h"
+#include "neo7m.h"
 #include "mydebug.h"
 #include "lwip/prot/dhcp.h"
 #define netif_dhcp_data(netif) ((struct dhcp*)netif_get_client_data(netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP))
@@ -98,9 +100,8 @@ osSemaphoreId myBinarySem01Handle;
 /* Private variables ---------------------------------------------------------*/
 struct netif *netif, *netif2;
 extern const ip4_addr_t *ipaddr;
-int t1ready = 0;
+uint32_t t1sec = 0;
 extern uint32_t t2cap[1];
-extern uint32_t t2avg;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -1059,9 +1060,9 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {  // every second
 			diff = t2cap[0] - lastcap;
 		}
 
-		t2avg = movavg(diff);
-		printf("TIM2 IC Callback CCR3=%08x, [0]%08xu, [1]%08x diff=%u, avg=%08x",
-				htim->Instance->CCR3, t2cap[0], lastcap, diff, t2avg);
+		statuspkt.clktrim = movavg(diff);
+		printf("TIM2 IC Callback CCR3=%08x, [0]%08xu, [1]%08x diff=%u, clktrim=%08x",
+				htim->Instance->CCR3, t2cap[0], lastcap, diff, statuspkt.clktrim);
 		printf(" globaladcavg=%u\n",globaladcavg);
 	}
 	lastcap = t2cap[0];
@@ -1081,6 +1082,9 @@ void StartDefaultTask(void const * argument)
   /* init code for LWIP */
   MX_LWIP_Init();
 
+  /* init code for FATFS */
+  MX_FATFS_Init();
+
   /* USER CODE BEGIN 5 */
 	{
 		HAL_StatusTypeDef err;
@@ -1093,6 +1097,10 @@ void StartDefaultTask(void const * argument)
 		netif_set_status_callback(netif, netif_status_callbk_fn);
 
 		t2cap[0] = 55555555;
+
+		statuspkt.udpcount = 0;
+		statuspkt.adcpktssent = 0;
+		statuspkt.uid = 0x12346;		// 18 bits
 
 		osDelay(100);
 
@@ -1136,7 +1144,7 @@ void StartDefaultTask(void const * argument)
 		} else {
 			dhcpok = 1;
 		}
-		t1ready = 1;
+
 #if 1
 		for(i=0; i<sizeof(dacdata)>>1; i++) {
 			dacdata[i] = i * 4096/(sizeof(dacdata)>>1);
@@ -1167,7 +1175,7 @@ void StarLPTask(void const * argument)
 {
   /* USER CODE BEGIN StarLPTask */
 	/* Infinite loop */
-	http_server_netconn_init();
+//	http_server_netconn_init();
 	for (;;) {
 		osDelay(1);
 	}
@@ -1194,7 +1202,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
 	if (htim->Instance == TIM2) {
-		printf("T2P PeriodElapsedCallback %u %u\n", t2cap[0], t2avg);
+		printf("T2P PeriodElapsedCallback %u %u\n", t2cap[0], statuspkt.clktrim);
 		return;
 	}
 	if (htim->Instance == TIM3) {
@@ -1203,6 +1211,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 
 	if (htim->Instance == TIM6) {
+		t1sec++;
 //		printf("T6 PeriodElapsedCallback %u SR=%u\n", myfullcomplete, TIM6->SR);
 		return;
 	}

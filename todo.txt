@@ -1,0 +1,2 @@
+Should add ADC background noise level and the detection threshold offset to the status packet.
+
