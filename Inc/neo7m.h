@@ -66,6 +66,8 @@ struct statpkt {
 	uint32_t clktrim;		// Nominal 108MHz clock is actually this frequency
 	uint32_t uid;			// only 18 bits used
 	uint32_t adcpktssent;	// Number of ADC pks sent in this trigger event
+	uint16_t adctrigoff;	// adc trigger threshold above noise
+	uint16_t adcnoise;		// average background noise seen by ADC
 
 } statuspkt; __attribute__((aligned(4),packed)) CHALLENGE;
 

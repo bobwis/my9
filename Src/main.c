@@ -1101,6 +1101,7 @@ void StartDefaultTask(void const * argument)
 		statuspkt.udpcount = 0;
 		statuspkt.adcpktssent = 0;
 		statuspkt.uid = 0x12346;		// 18 bits
+		statuspkt.adctrigoff = TRIG_THRES;			// not dynamic (yet)
 
 		osDelay(100);
 

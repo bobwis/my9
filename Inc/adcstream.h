@@ -12,7 +12,6 @@
 #define ADCBUFHEAD 16
 #define ADCBUFSIZE (UDPBUFSIZE-ADCBUFHEAD)
 
-#define DETECT_THRES 1000		// adc detection initial trig pkt thresh (dynamic now)
 #define TRIG_THRES 110			// adc trigger level above avg noise
 #define HANGPRESET 1			// packets sampling continues after a trigger event
 
@@ -39,7 +38,7 @@ extern unsigned int myfullcomplete;
 extern unsigned int myhalfcomplete;
 
 extern unsigned int hangcount;		// number of streams let after adc thresh exceeded
-extern uint16_t adcthreshold;		// adc attention level threshold
+
 extern uint32_t globaladcavg;		// adc global average level over 100-200msec
 extern uint32_t t2avg;				// cpu clock trim variable
 

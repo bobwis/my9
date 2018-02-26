@@ -18,7 +18,7 @@ adcbuffer *adcbuf2;
 adcbuffer *pktbuf;
 
 uint32_t t2cap[1];
-uint16_t adcthreshold = DETECT_THRES;
+
 
 unsigned int myfullcomplete = 0;
 unsigned int myhalfcomplete = 0;
@@ -274,7 +274,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done
 	(*buf)[3] = timestamp;
 
 	for (i = 0; i < (ADCBUFSIZE / 2); i++) {
-		if ((*adcbuf16)[i] > adcthreshold) {
+		if ((*adcbuf16)[i] > ((statuspkt.adctrigoff + statuspkt.adcnoise) & 0x3fff)) {
 			hangcount = HANGPRESET + 1;		// enable detection processing
 			ledhang = 1000;
 		}
@@ -301,7 +301,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done
 		avg = 0;
 		samplecnt = 0;
 	}
-	adcthreshold = (globaladcavg & 0xfff) + TRIG_THRES;	// agc
+	statuspkt.adcnoise = (globaladcavg & 0xfff);	// agc
 }
 #endif
 
