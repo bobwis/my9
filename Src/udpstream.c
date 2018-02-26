@@ -64,7 +64,11 @@ void startudp() {
 		for (;;)
 			;
 	}
-
+	// use DNS instead of fixed ip?  lightning.bdars.org.au or something, we can override it locally without making changes to the code 
+	// and make it easier to test at the club or something
+	// getaddrinfo();
+	
+	
 	/* set udp_echo_recv() as callback function for received packets */
 //	udp_recv(pcb, myudp_recv, NULL);
 #if 0
