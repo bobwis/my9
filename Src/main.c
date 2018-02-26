@@ -244,7 +244,12 @@ int main(void)
 	/* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
  
-
+  // Suggest moving contents of StartDefaultTask to a general Init() function and calling it once here.
+  // Init()
+  // then we don't need to create the tasks at all, we're not using the scheduler at the moment, StartDefaultTask does the init and waits
+  // StartLPTask only waits
+	
+	
   /* Start scheduler */
   osKernelStart();
   
@@ -1157,6 +1162,9 @@ void StartDefaultTask(void const * argument)
 		startadc();
 		if (dhcpok)
 			startudp();
+		
+		//PB:  Don't *think*, we need these inf-loop ends here, it may be perfectly ok to let the procedure finish (lower power usage ?? :-) )
+		
 		/* Infinite loop */
 		for (;;) {
 
