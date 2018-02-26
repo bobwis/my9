@@ -119,7 +119,7 @@
  #define USE_FULL_ASSERT    1U 
 
 /* USER CODE BEGIN Private defines */
-#define MY_UID 0x12346		// 18 bits  "serial number" of the lightning detector
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -10,6 +10,7 @@
 
 void startudp(void);
 
-#define 	SERVER_DESTINATION "lightning.vk4ya.space"
+#define MY_UID 0x12345		// 18 bits  "serial number" of the lightning detector
+#define SERVER_DESTINATION "lightning.vk4ya.space"
 
 #endif /* UDPSTREAM_H_ */

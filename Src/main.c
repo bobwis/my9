@@ -59,6 +59,7 @@
 #include "neo7m.h"
 #include "mydebug.h"
 #include "lwip/prot/dhcp.h"
+#include "udpstream.h"
 #define netif_dhcp_data(netif) ((struct dhcp*)netif_get_client_data(netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP))
 /* USER CODE END Includes */
 
