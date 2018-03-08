@@ -1010,7 +1010,7 @@ uint32_t movavg(uint32_t new) {
 	return (sum >> 4);
 }
 
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {  // every second
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {  // every second 1 pps
 	uint32_t diff;
 	static uint32_t lastcap = 0;
 
@@ -1060,7 +1060,7 @@ void StartDefaultTask(void const * argument) {
 		netif_set_link_callback(netif, netif_link_callbk_fn);
 		netif_set_status_callback(netif, netif_status_callbk_fn);
 
-		t2cap[0] = 55555555;
+		t2cap[0] = 44444444;
 
 		statuspkt.uid = MY_UID;		// 18 bits
 		statuspkt.udpcount = 0;

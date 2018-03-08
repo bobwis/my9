@@ -165,8 +165,7 @@ void startudp() {
 
 			((uint8_t *) (p->payload))[0] = statuspkt.udpcount & 0xff;
 			((uint8_t *) (p->payload))[1] = (statuspkt.udpcount & 0xff00) >> 8;
-			((uint8_t *) (p->payload))[2] = (statuspkt.udpcount & 0xff0000)
-					>> 16;
+			((uint8_t *) (p->payload))[2] = (statuspkt.udpcount & 0xff0000)>> 16;
 
 			while (p->ref != 1) {		// old packet not finished with yet
 				printf("******* p->ref = %d *******\n", p->ref);

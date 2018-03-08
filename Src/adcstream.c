@@ -17,7 +17,7 @@ adcbuffer *adcbuf1;
 adcbuffer *adcbuf2;
 adcbuffer *pktbuf;
 
-uint32_t t2cap[1];
+uint32_t t2cap[1];  // dma writes t2 capture value on 1pps edge
 
 
 unsigned int myfullcomplete = 0;
@@ -250,10 +250,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done
 #endif
 
 #if 1
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done (DMA complete)
 {
 	register uint32_t timestamp, i;
-	adcbuffer *buf;
+	volatile adcbuffer *buf;
 	adc16buffer *adcbuf16;
 	uint32_t adcbgnoise = 0;		// avg adc level per buffer
 	static uint32_t samplecnt = 0, avg = 0;
@@ -270,7 +270,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done
 
 //	(*buf)[0] = UDP seq and packet flags	// set in udpstream.c
 	(*buf)[1] = (myfullcomplete & 0xff) | ((statuspkt.uid & 0x3ffff) << 8) | (statuspkt.NavPvt.sec << 26);// ADC completed packet counter (24 bits)
-//	(*buf)[2] = 1pps capture cnt;		// 1pps counter capture  (set by DMA)
+//	(*buf)[2] = 1pps capture cnt;		// 1pps counter capture  (set by DMA - copied below)
+	(*buf)[2] = t2cap[0];
 	(*buf)[3] = timestamp;
 
 	for (i = 0; i < (ADCBUFSIZE / 2); i++) {
