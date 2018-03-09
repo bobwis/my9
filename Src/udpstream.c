@@ -203,9 +203,20 @@ void startudp() {
 				statuspkt.udpcount++;
 				statuspkt.adcpktssent = 0;
 			} else {
-				if (t1sec != talive) {// this is a temporary mech to do this...
+				if (t1sec != talive) {// this is a temporary mech to send timed status pkts...
 					talive = t1sec;
-					justsent = 1;		// force a status packet
+					while (ps->ref != 1) {  // old packet not finished with yet
+						printf("******* ps->ref = %d *******\n", ps->ref);
+					}
+					((uint8_t *) (ps->payload))[3] = 2;	// timed status pkt type
+					err = udp_sendto(pcb, ps, &destip /*IP_ADDR_BROADCAST*/, 5000);
+					if (err != ERR_OK) {
+						printf("startudp: ps udp_sendto err %i\n", err);
+						vTaskDelay(1999); //some delay!
+					}
+					while (ps->ref != 1) {  // old packet not finished with yet
+						; // but we need wait to update the data packet next, so wait
+					}
 				}
 			}
 		}
