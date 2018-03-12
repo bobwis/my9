@@ -12,7 +12,7 @@
 #define ADCBUFHEAD 16
 #define ADCBUFSIZE (UDPBUFSIZE-ADCBUFHEAD)
 
-#define TRIG_THRES 110			// adc trigger level above avg noise
+#define TRIG_THRES 120			// adc trigger level above avg noise (should be calculated, not fixed)
 #define HANGPRESET 1			// packets sampling continues after a trigger event
 
 typedef uint32_t adcbuffer[ADCBUFSIZE/2];
@@ -41,5 +41,8 @@ extern unsigned int hangcount;		// number of streams let after adc thresh exceed
 
 extern uint32_t globaladcavg;		// adc global average level over 100-200msec
 extern uint32_t t2avg;				// cpu clock trim variable
+extern uint8_t gpslocked;			// state of the GPS locked
+extern uint8_t netup;				// state of LAN up / down
+extern uint16_t padding1;			// unused
 
 #endif /* ADCSTREAM_H_ */

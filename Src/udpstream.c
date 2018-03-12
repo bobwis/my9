@@ -143,6 +143,14 @@ void startudp() {
 		osDelay(250);
 	}
 
+	statuspkt.reserved1 = 0x11111111;
+	statuspkt.reserved2 = 0x22222222;
+	statuspkt.reserved3 = 0x33333333;
+	statuspkt.reserved4 = 0x44444444;
+	statuspkt.reserved5 = 0x55555555;
+	statuspkt.telltale1 = 0xDEC0EDFE; //  0xFEEDC0DE marker at the end of each status packet
+
+	netup = 1;		// this is incomplete - it should be set by the phys layer also
 	printf("Starting UDP Stream loop\n");
 	while (1) {
 //		p1 = pbuf_alloc(PBUF_TRANSPORT, sizeof(mypbuf), PBUF_ROM);		// header pbuf
@@ -181,12 +189,12 @@ void startudp() {
 			while (ps->ref != 1) {  // old packet not finished with yet
 				;	// but we need wait to update the data packet next, so wait
 			}
-			statuspkt.udpcount++;		// UDP packet number
+			statuspkt.udpcount++;		// UDP packet number - global var used by all
 			HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_RESET); // blue led off
 		} // if hangcount
-		else	// nothing to send
+		else	// no adc sample data to send
 		{
-			if (justsent) {	// finished sending adc so now send a  GPS / status packet
+			if (justsent) {	// just finished sending adc so now send a  GPS / status packet
 				justsent = 0;
 				while (ps->ref != 1) {  // old packet not finished with yet
 					printf("******* ps->ref = %d *******\n", ps->ref);
@@ -216,6 +224,7 @@ void startudp() {
 					}
 					while (ps->ref != 1) {  // old packet not finished with yet
 						; // but we need wait to update the data packet next, so wait
+					statuspkt.udpcount++;
 					}
 				}
 			}

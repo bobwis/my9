@@ -1,2 +1,10 @@
-	/* set udp_echo_recv() as callback function for received packets */
+TO-DO LIST
 
+set udp_echo_recv() as callback function for received packets
+
+netuptime timer is only reset after a reboot
+phys disconnect / reconnect should update netuptime accordingly
+
+phys disconnect should re-instigate dhcp etc
+
+trigger offset above noise needs to be continuously caclulated, not fixed (eg 120) 

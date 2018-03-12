@@ -1010,7 +1010,7 @@ uint32_t movavg(uint32_t new) {
 	return (sum >> 4);
 }
 
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {  // every second 1 pps
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {  // every second 1 pps (on external signal)
 	uint32_t diff;
 	static uint32_t lastcap = 0;
 
@@ -1124,7 +1124,7 @@ void StartDefaultTask(void const * argument) {
 #endif
 		startadc();
 		while (dhcpok) {
-			startudp();		// only returns on error
+			startudp();		// never returns?
 		}
 	}
 	/* USER CODE END 5 */
@@ -1135,6 +1135,9 @@ void StarLPTask(void const * argument) {
 	/* USER CODE BEGIN StarLPTask */
 	/* Infinite loop */
 //	http_server_netconn_init();
+	statuspkt.sysuptime = 0;
+	statuspkt.netuptime = 0;
+	statuspkt.gpsuptime = 0;
 	for (;;) {
 		osDelay(1);
 	}
@@ -1168,8 +1171,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		return;
 	}
 
-	if (htim->Instance == TIM6) {
+	if (htim->Instance == TIM6) {			// 1 second (internally timed, not compensated by GPS)
 		t1sec++;
+		statuspkt.sysuptime++;
+		if (netup)
+			statuspkt.netuptime++;
+		if (gpslocked)
+			statuspkt.gpsuptime++;
 //		printf("T6 PeriodElapsedCallback %u SR=%u\n", myfullcomplete, TIM6->SR);
 		return;
 	}

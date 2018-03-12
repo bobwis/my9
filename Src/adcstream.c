@@ -26,6 +26,10 @@ unsigned int myhalfcomplete = 0;
 unsigned int hangcount = 0;	// number of streams let after adc thresh exceeded
 uint32_t globaladcavg = 0;		// adc average over 100-200msec
 
+// the two vars below should be moved to more appropriate file
+uint8_t gpslocked = 0;			// state of the GPS locked
+uint8_t netup = 0;				// state of LAN up / down
+
 /**
  * @brief  DMA transfer complete callback.
  * @param  hdma: pointer to a DMA_HandleTypeDef structure that contains
