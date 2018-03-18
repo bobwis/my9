@@ -60,7 +60,7 @@
 #include "cmsis_os.h"
 /* Within 'USER CODE' section, code will be kept by default at each generation */
 /* USER CODE BEGIN 0 */
-
+#include "udpstream.h"
 /* USER CODE END 0 */
 
 /* Private define ------------------------------------------------------------*/
@@ -249,14 +249,14 @@ static void low_level_init(struct netif *netif)
   MACAddr[2] = 0xE1;
   MACAddr[3] = 0x00;
   MACAddr[4] = 0xAA;
-  MACAddr[5] = 0x01;
+  MACAddr[5] = 0x02;
   heth.Init.MACAddr = &MACAddr[0];
   heth.Init.RxMode = ETH_RXINTERRUPT_MODE;
   heth.Init.ChecksumMode = ETH_CHECKSUM_BY_HARDWARE;
   heth.Init.MediaInterface = ETH_MEDIA_INTERFACE_RMII;
 
   /* USER CODE BEGIN MACADDRESS */
-    
+  MACAddr[5] = MY_UID & 0xFF;		// fiddle mac address; eventually use EEPROM stored value TODO
   /* USER CODE END MACADDRESS */
 
   hal_eth_init_status = HAL_ETH_Init(&heth);

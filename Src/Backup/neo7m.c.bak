@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include "stm32f7xx_hal.h"
 #include "neo7m.h"
+#include "adcstream.h"
 
 typedef uint8_t byte;
 
@@ -444,7 +445,7 @@ void setupneo() {
 	osDelay(100);
 // Enable Time pulse
 	enableNaTP5();
-
+	statuspkt.NavPvt.flags = 0;		// make sure gps not showing as locked
 		printf("NEO: Auto-configuration is complete\n\r");
 
 //		fastdelay_ms(100); // Little delay before flushing
@@ -464,6 +465,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 			for (unsigned int i = offset; i < sizeof(statuspkt.NavPvt); i++) {
 				*((char*) (&(statuspkt.NavPvt)) + (i - offset)) = PACKETstore[i]; // copy into global struct
 			}
+		if (statuspkt.NavPvt.flags & 1)	// locked
+			gpslocked = 1;
+		else
+			gpslocked = 0;
 		}
 
 #if 0
