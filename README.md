@@ -11,7 +11,7 @@ Samples ADC at approx 2.68Msps and streams ADC readings and GPS to LAN using IPv
 
 - GPS Tx -> STM32 USART6 Rx, D0/PG9 on STM32 board
 - GPS Rx -> STM32 USART6 Tx, D16/PC6 on STM32 Board
-- GPS 1PPS -> STM32 Timer2 CH3 Capture input, D36/PB10 on STM32
+- GPS 1PPS -> STM32 Timer2 CH3 Capture input, D36/PB10 on STM32, also to D13/PA5 on STM (2 connections)
 
 - ADC Input (Antenna / LowPass etc) -> ADC PA3/A0 on STM32 - Should really bias half way to 3.3V and use a simple front-end
 

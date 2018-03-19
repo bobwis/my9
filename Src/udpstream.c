@@ -28,11 +28,8 @@ struct ip4_addr destip;		// dst ipv4 address
 static int ip_ready = 0;
 
 void dnsfound(const char *name, const ip_addr_t *ipaddr, void *callback_arg) {
-	uint32_t i;
 
-	i = destip.addr = ipaddr->addr;
-	printf("Found at %d.%d.%d.%d\n", i & 0xff, (i & 0xff00) >> 8,
-			(i & 0xff0000) >> 16, (i & 0xff000000) >> 24);
+	destip.addr = ipaddr->addr;
 	ip_ready = 1;
 }
 
@@ -41,6 +38,7 @@ void startudp() {
 	volatile struct pbuf *p, *p1, *p2, *ps;
 
 	uint32_t lastsent = 0;
+	uint32_t ip = 0;;
 	static int justsent = 0;
 	static uint32_t adcsentcnt = 0, talive = 0;
 	volatile err_t err;
@@ -79,17 +77,14 @@ void startudp() {
 	printf("DNS Resolving %s ... ", SERVER_DESTINATION);
 	if (err = dns_gethostbyname(SERVER_DESTINATION, &destip, dnsfound, 0)) {
 		switch (err) {
-		uint32_t i;
 	case ERR_OK:		// a cached result
-		i = destip.addr;
-		printf("Found at %d.%d.%d.%d\n", i & 0xff, (i & 0xff00) >> 8,
-				(i & 0xff0000) >> 16, (i & 0xff000000) >> 24);
 		ip_ready = 1;
 		break;
 	case ERR_INPROGRESS:		// a callback result to dnsfound if it find it
-		printf("gethostbyname INPROGRESS\n ");
-		for (i = 0; i < 10; i++) {
+		printf("gethostbyname INPROGRESS");
+		for (i = 0; i < 20; i++) {
 			osDelay(1000);		// give it 10 seconds
+			printf(".");
 			if (ip_ready)
 				break;
 		}
@@ -104,6 +99,9 @@ void startudp() {
 		break;
 		}
 	}
+
+	ip = destip.addr;
+	printf("\nTarget IP at %u.%u.%u.%u\n",ip & 0xff,(ip & 0xff00)>>8,(ip & 0xff0000)>>16,(ip & 0xff000000)>>24);
 
 	p1 = pbuf_alloc(PBUF_TRANSPORT, UDPBUFSIZE, PBUF_ROM);		// pk1 pbuf
 
