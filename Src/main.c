@@ -61,6 +61,8 @@
 #include "mydebug.h"
 #include "lwip/prot/dhcp.h"
 #include "udpstream.h"
+#include "version.h"
+
 #define netif_dhcp_data(netif) ((struct dhcp*)netif_get_client_data(netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP))
 /* USER CODE END Includes */
 
@@ -1041,6 +1043,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {  // every second 1 pp
 	HAL_GPIO_TogglePin(GPIOB, LD1_Pin);		// green led
 
 	if (htim->Instance == TIM2) {
+		rtseconds = (statuspkt.NavPvt.sec + 1 ) % 60;		// assume we get here before serial comms updates gps seconds field
 //		neotime();
 #if 0		// clktrim with non-resetting pps counter
 		if (lastcap > t2cap[0]) {		// counter wrapped
@@ -1094,7 +1097,13 @@ void StartDefaultTask(void const * argument)
 		t2cap[0] = 44444444;
 
 		statuspkt.uid = MY_UID;		// 18 bits
+		statuspkt.majorversion = MAJORVERSION;
+		statuspkt.minorversion = MINORVERSION;
 		statuspkt.udpcount = 0;
+		statuspkt.sysuptime = 0;
+		statuspkt.netuptime = 0;
+		statuspkt.gpsuptime = 0;
+
 		statuspkt.adcpktssent = 0;
 
 		statuspkt.adctrigoff = TRIG_THRES;			// not dynamic (yet)
@@ -1167,9 +1176,7 @@ void StarLPTask(void const * argument)
   /* USER CODE BEGIN StarLPTask */
 	/* Infinite loop */
 //	http_server_netconn_init();
-	statuspkt.sysuptime = 0;
-	statuspkt.netuptime = 0;
-	statuspkt.gpsuptime = 0;
+
 	for (;;) {
 		osDelay(1);
 	}
@@ -1196,7 +1203,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
 	if (htim->Instance == TIM2) {
-		printf("T2P PeriodElapsedCallback %u %u\n", t2cap[0],
+		printf("T2P PeriodElapsedCallback %l %u\n", t2cap[0],
 				statuspkt.clktrim);
 		return;
 	}

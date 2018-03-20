@@ -141,8 +141,8 @@ void startudp() {
 		osDelay(250);
 	}
 
-	statuspkt.reserved1 = 0x11111111;
-	statuspkt.reserved2 = 0x22222222;
+	statuspkt.reserved1 = 0x11;
+	statuspkt.reserved2 = 0x22;
 	statuspkt.reserved3 = 0x33333333;
 	statuspkt.reserved4 = 0x44444444;
 	statuspkt.reserved5 = 0x55555555;
@@ -209,7 +209,7 @@ void startudp() {
 				statuspkt.udpcount++;
 				statuspkt.adcpktssent = 0;
 			} else {
-				if (t1sec != talive) {// this is a temporary mech to send timed status pkts...
+				if ((t1sec != talive) && (t1sec % 120 == 0)) {// this is a temporary mech to send timed status pkts...
 					talive = t1sec;
 					while (ps->ref != 1) {  // old packet not finished with yet
 						printf("******* ps->ref = %d *******\n", ps->ref);

@@ -29,6 +29,7 @@ uint32_t globaladcavg = 0;		// adc average over 100-200msec
 // the two vars below should be moved to more appropriate file
 uint8_t gpslocked = 0;			// state of the GPS locked
 uint8_t netup = 0;				// state of LAN up / down
+uint8_t rtseconds = 0;			// real time seconds
 
 /**
  * @brief  DMA transfer complete callback.
@@ -273,7 +274,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done (D
 	adcbuf16 = &((uint16_t *) *buf)[8];
 
 //	(*buf)[0] = UDP seq and packet flags	// set in udpstream.c
-	(*buf)[1] = (myfullcomplete & 0xff) | ((statuspkt.uid & 0x3ffff) << 8) | (statuspkt.NavPvt.sec << 26);// ADC completed packet counter (24 bits)
+	(*buf)[1] = (myfullcomplete & 0xff) | ((statuspkt.uid & 0x3ffff) << 8) | (rtseconds << 26);// ADC completed packet counter (24 bits)
 //	(*buf)[2] = 1pps capture cnt;		// 1pps counter capture  (set by DMA - copied below)
 	(*buf)[2] = t2cap[0];
 	(*buf)[3] = timestamp;

@@ -71,11 +71,14 @@ struct statpkt {
 	uint32_t sysuptime;		// number of seconds system up from boot uptime
 	uint32_t netuptime;		// number of seconds network up
 	uint32_t gpsuptime;		// number of seconds gps locked
-	uint32_t reserved1;		// spare
-	uint32_t reserved2;		// spare
+	uint8_t majorversion;	// major version of STM32 detector
+	uint8_t minorversion;	// minor version of STM32 detector
+	uint8_t reserved1;		// spare
+	uint8_t reserved2;		// spare
 	uint32_t reserved3;		// spare
 	uint32_t reserved4;		// spare
 	uint32_t reserved5;		// spare
+	uint32_t reserved6;		// spare
 	uint32_t telltale1;		// end of packet marker
 
 } statuspkt; __attribute__((aligned(4),packed)) CHALLENGE;
