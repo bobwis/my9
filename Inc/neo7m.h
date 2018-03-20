@@ -67,18 +67,17 @@ struct statpkt {
 	uint32_t uid;			// only 18 bits used
 	uint32_t adcpktssent;	// Number of ADC pks sent in this trigger event
 	uint16_t adctrigoff;	// adc trigger threshold above noise
-	uint16_t adcnoise;		// average background noise seen by ADC
+	uint16_t adcbase;		// average background level seen by ADC
 	uint32_t sysuptime;		// number of seconds system up from boot uptime
 	uint32_t netuptime;		// number of seconds network up
 	uint32_t gpsuptime;		// number of seconds gps locked
 	uint8_t majorversion;	// major version of STM32 detector
 	uint8_t minorversion;	// minor version of STM32 detector
-	uint8_t reserved1;		// spare
-	uint8_t reserved2;		// spare
+	uint16_t adcnoise;		// adc average peak noise
+	uint32_t reserved1;		// spare
+	uint32_t reserved2;		// spare
 	uint32_t reserved3;		// spare
 	uint32_t reserved4;		// spare
-	uint32_t reserved5;		// spare
-	uint32_t reserved6;		// spare
 	uint32_t telltale1;		// end of packet marker
 
 } statuspkt; __attribute__((aligned(4),packed)) CHALLENGE;

@@ -24,7 +24,8 @@ unsigned int myfullcomplete = 0;
 unsigned int myhalfcomplete = 0;
 
 unsigned int hangcount = 0;	// number of streams let after adc thresh exceeded
-uint32_t globaladcavg = 0;		// adc average over 100-200msec
+uint32_t globaladcavg = 0;		// adc average over milli-secs
+uint32_t globaladcnoise = 0;	// adc noise peaks average over milli-secs
 
 // the two vars below should be moved to more appropriate file
 uint8_t gpslocked = 0;			// state of the GPS locked
@@ -260,9 +261,14 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done (D
 	register uint32_t timestamp, i;
 	volatile adcbuffer *buf;
 	adc16buffer *adcbuf16;
-	uint32_t adcbgnoise = 0;		// avg adc level per buffer
-	static uint32_t samplecnt = 0, avg = 0;
+	uint32_t adcbgbase = 0;		// avg adc level per buffer
+	static uint32_t samplecnt = 0, noisecnt = 0, avg = 0, noise = 0;
 	static uint32_t ledhang = 0;
+	static uint32_t avghi = 0;		// avg of all the peaks
+	static uint16_t lastsam = 0;	// about half adc res
+	uint32_t peaks = 0;				// sum of all peaks
+	uint32_t peakcount = 0;			// number of peaks
+	uint8_t goingup = 0; // slope
 
 	timestamp = TIM2->CNT;			// real time
 
@@ -280,15 +286,26 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done (D
 	(*buf)[3] = timestamp;
 
 	for (i = 0; i < (ADCBUFSIZE / 2); i++) {
-		if ((*adcbuf16)[i] > ((statuspkt.adctrigoff + statuspkt.adcnoise) & 0x3fff)) {
+		if ((*adcbuf16)[i] > ((statuspkt.adctrigoff + statuspkt.adcbase) & 0x3fff)) {
 			hangcount = HANGPRESET + 1;		// enable detection processing
 			ledhang = 1000;
 		}
-		adcbgnoise += (*adcbuf16)[i];
+		adcbgbase += (*adcbuf16)[i];		// used to find avg level of signal
+		if (lastsam < (*adcbuf16)[i])	// going up
+		{
+			goingup = 1;
+		}
+		else
+		{
+			if ((lastsam > (*adcbuf16)[i])  && (goingup))	// going down from peak
+			goingup = 0;
+			peaks += lastsam;
+			peakcount++;
+		}
+		lastsam = (*adcbuf16)[i];
 	}
 	if (hangcount) {
 		hangcount--;
-
 	}
 	if (ledhang) {
 		ledhang--;
@@ -296,18 +313,31 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done (D
 	} else {
 		HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_RESET);	 // red led off
 	}
+
+	statuspkt.adctrigoff = TRIG_THRES + ((globaladcnoise - statuspkt.adcbase) << 2);		// thresh notices avg peaks
+
 //	HAL_GPIO_TogglePin(GPIOB, LD3_Pin);		// Red LED
 	myfullcomplete++;
 	samplecnt++;
+	noisecnt++;
 
-	avg += adcbgnoise / (ADCBUFSIZE / 2);
-	if (samplecnt == 256) {			// 256 adc bufffers sampled
-		globaladcavg = avg >> 8;		// maybe 100-200mSec
-		adcbgnoise = 0;
+	avg += adcbgbase / (ADCBUFSIZE / 2);
+	if (samplecnt == 512) {			// 512 adc bufffers sampled
+		globaladcavg = avg >> 9;		// approx 140mSec
+		adcbgbase = 0;
 		avg = 0;
 		samplecnt = 0;
 	}
-	statuspkt.adcnoise = (globaladcavg & 0xfff);	// agc
+
+	peaks /= peakcount;		// average amplitude of peaks (noise) in this buffer
+	noise += peaks;
+	if (noisecnt == 256) {
+		globaladcnoise = noise >> 8;
+		noise = 0;
+		noisecnt = 0;
+	}
+	statuspkt.adcnoise = (globaladcnoise & 0xfff);	// agc
+	statuspkt.adcbase = (globaladcavg & 0xfff);	// agc
 }
 #endif
 
