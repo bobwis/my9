@@ -179,7 +179,7 @@ void startudp() {
 				printf("******* p->ref = %d *******\n", p->ref);
 			}
 
-			if (statuspkt.gpsuptime > 30) {	// dont actually send any samples until stable
+			if (statuspkt.gpsuptime > 60) {	// dont actually send any samples until stable
 				err = udp_sendto(pcb, p, &destip, 5000);
 				if (err != ERR_OK) {
 					printf("startudp: p udp_sendto err %i\n", err);

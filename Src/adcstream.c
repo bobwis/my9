@@ -19,7 +19,6 @@ adcbuffer *pktbuf;
 
 uint32_t t2cap[1];  // dma writes t2 capture value on 1pps edge
 
-
 unsigned int myfullcomplete = 0;
 unsigned int myhalfcomplete = 0;
 
@@ -256,7 +255,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done
 #endif
 
 #if 1
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done (DMA complete)
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DMA complete)
 {
 	register uint32_t timestamp, i;
 	volatile adcbuffer *buf;
@@ -280,7 +279,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done (D
 	adcbuf16 = &((uint16_t *) *buf)[8];
 
 //	(*buf)[0] = UDP seq and packet flags	// set in udpstream.c
-	(*buf)[1] = (myfullcomplete & 0xff) | ((statuspkt.uid & 0x3ffff) << 8) | (rtseconds << 26);// ADC completed packet counter (24 bits)
+	(*buf)[1] = (myfullcomplete & 0xff) | ((statuspkt.uid & 0x3ffff) << 8)
+			| (rtseconds << 26);	// ADC completed packet counter (24 bits)
 //	(*buf)[2] = 1pps capture cnt;		// 1pps counter capture  (set by DMA - copied below)
 	(*buf)[2] = t2cap[0];
 	(*buf)[3] = timestamp;
@@ -290,17 +290,19 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done (D
 			hangcount = HANGPRESET + 1;		// enable detection processing
 			ledhang = 1000;
 		}
-		adcbgbase += (*adcbuf16)[i];		// used to find avg level of signal
-		if (lastsam < (*adcbuf16)[i])	// going up
-		{
+		adcbgbase += (*adcbuf16)[i];		// accumulator used to find avg level of signal
+		if (lastsam < (*adcbuf16)[i]) {	// going up
 			goingup = 1;
 		}
-		else
+		else	// lastsam is same or larger than this sample
 		{
-			if ((lastsam > (*adcbuf16)[i])  && (goingup))	// going down from peak
-			goingup = 0;
-			peaks += lastsam;
-			peakcount++;
+			if (lastsam > (*adcbuf16)[i]) { 			// going down from peak
+				if ((lastsam > statuspkt.adcbase) && (goingup)) { // we are above base and were going up before
+					peaks += lastsam;
+					peakcount++;
+				}
+				goingup = 0;
+			}
 		}
 		lastsam = (*adcbuf16)[i];
 	}
@@ -314,7 +316,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done (D
 		HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_RESET);	 // red led off
 	}
 
-	statuspkt.adctrigoff = TRIG_THRES + ((globaladcnoise - statuspkt.adcbase) << 2);		// thresh notices avg peaks
+	if (globaladcnoise == 0)
+		globaladcnoise = statuspkt.adcbase;		// dont allow zero peaks
+
+	statuspkt.adctrigoff = TRIG_THRES
+			+ ((globaladcnoise - statuspkt.adcbase) << 3);// thresh notices avg peaks
 
 //	HAL_GPIO_TogglePin(GPIOB, LD3_Pin);		// Red LED
 	myfullcomplete++;
@@ -322,16 +328,16 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done (D
 	noisecnt++;
 
 	avg += adcbgbase / (ADCBUFSIZE / 2);
-	if (samplecnt == 512) {			// 512 adc bufffers sampled
-		globaladcavg = avg >> 9;		// approx 140mSec
+	if (samplecnt == 2048) {			// 2k adc bufffers sampled
+		globaladcavg = avg >> 11;			// approx 0.5 sec?
 		adcbgbase = 0;
 		avg = 0;
 		samplecnt = 0;
 	}
 
-	peaks /= peakcount;		// average amplitude of peaks (noise) in this buffer
-	noise += peaks;
-	if (noisecnt == 256) {
+	peaks /= peakcount;	// average amplitude of peaks (noise) in this buffer
+	noise += peaks;		// accumulator of avg noise buffer
+	if (noisecnt == 256) {				// enough buffers sampled
 		globaladcnoise = noise >> 8;
 		noise = 0;
 		noisecnt = 0;
@@ -352,7 +358,7 @@ void startadc() {
 
 	printf("Startadc:\n");
 	osDelay(1000);
-	// get some heap for the ADC stream DMA buffer 1
+// get some heap for the ADC stream DMA buffer 1
 	pktbuf = pvPortMalloc(UDPBUFSIZE * 2);	// two buffers concatenated
 	if (pktbuf == NULL) {
 		printf("pvPortMalloc returned nil for pktbuf\n");
