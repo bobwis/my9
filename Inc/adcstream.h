@@ -12,7 +12,7 @@
 #define ADCBUFHEAD 16
 #define ADCBUFSIZE (UDPBUFSIZE-ADCBUFHEAD)
 
-#define TRIG_THRES 115			// adc trigger level above avg noise (should be calculated, not fixed)
+#define TRIG_THRES 150			// adc trigger level above avg noise (should be calculated, not fixed)
 #define HANGPRESET 1			// packets sampling continues after a trigger event
 
 typedef uint32_t adcbuffer[ADCBUFSIZE/2];

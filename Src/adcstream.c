@@ -320,7 +320,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 		globaladcnoise = statuspkt.adcbase;		// dont allow zero peaks
 
 	statuspkt.adctrigoff = TRIG_THRES
-			+ ((globaladcnoise - statuspkt.adcbase) << 3);// thresh notices avg peaks
+			+ ((globaladcnoise - statuspkt.adcbase) << 2) + (globaladcnoise - statuspkt.adcbase);// thresh notices avg peaks 5x
 
 //	HAL_GPIO_TogglePin(GPIOB, LD3_Pin);		// Red LED
 	myfullcomplete++;
