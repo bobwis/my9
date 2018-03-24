@@ -7,4 +7,4 @@ phys disconnect / reconnect should update netuptime accordingly
 
 phys disconnect should re-instigate dhcp etc
 
-trigger offset above noise needs to be continuously caclulated, not fixed (eg 120) 
+noise + base adc trigger offset needs to be checked  
