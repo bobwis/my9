@@ -232,8 +232,8 @@ void startudp() {
 					}
 					while (ps->ref != 1) { // old packet not finished with yet
 						; // but we need wait to update the data packet next, so wait
-						statuspkt.udpcount++;
 					}
+					statuspkt.udpcount++;
 				}
 			}
 		}
