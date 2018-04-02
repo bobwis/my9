@@ -74,10 +74,10 @@ struct statpkt {
 	uint8_t majorversion;	// major version of STM32 detector
 	uint8_t minorversion;	// minor version of STM32 detector
 	uint16_t adcnoise;		// adc average peak noise
+	uint32_t auxstatus1;	// spare 24 bits and adcbatchid 8 bits
 	uint32_t reserved1;		// spare
 	uint32_t reserved2;		// spare
 	uint32_t reserved3;		// spare
-	uint32_t reserved4;		// spare
 	uint32_t telltale1;		// end of packet marker
 
 } statuspkt; __attribute__((aligned(4),packed)) CHALLENGE;

@@ -1178,7 +1178,7 @@ void StarLPTask(void const * argument)
 //	http_server_netconn_init();
 
 	for (;;) {
-		osDelay(1);
+		osDelay(1000);
 	}
   /* USER CODE END StarLPTask */
 }

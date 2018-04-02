@@ -22,9 +22,11 @@ uint32_t t2cap[1];  // dma writes t2 capture value on 1pps edge
 unsigned int myfullcomplete = 0;
 unsigned int myhalfcomplete = 0;
 
-unsigned int hangcount = 0;	// number of streams let after adc thresh exceeded
+unsigned int sigprev = 0;	// number of streams let after adc thresh exceeded
+unsigned int sigsend = 0;	// flag to tell udp to send sample packet
 uint32_t globaladcavg = 0;		// adc average over milli-secs
 uint32_t globaladcnoise = 0;	// adc noise peaks average over milli-secs
+uint8_t	adcbatchid = 0;		// adc sequence number of a batch of 1..n consecutive triggered buffers
 
 // the two vars below should be moved to more appropriate file
 uint8_t gpslocked = 0;			// state of the GPS locked
@@ -282,14 +284,29 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	(*buf)[1] = (myfullcomplete & 0xff) | ((statuspkt.uid & 0x3ffff) << 8)
 			| (rtseconds << 26);	// ADC completed packet counter (24 bits)
 //	(*buf)[2] = 1pps capture cnt;		// 1pps counter capture  (set by DMA - copied below)
-	(*buf)[2] = t2cap[0];
+	(*buf)[2] = adcbatchid;		// 8 bits of 32 used
 	(*buf)[3] = timestamp;
 
+	if (sigsend) {		// oops overrun
+		statuspkt.reserved1++;
+//		sigsend--;
+		return;
+	}
+
 	for (i = 0; i < (ADCBUFSIZE / 2); i++) {
-		if ((*adcbuf16)[i] > ((statuspkt.adctrigoff + statuspkt.adcbase) & 0x3fff)) {
-			hangcount = HANGPRESET + 1;		// enable detection processing
+		if ((*adcbuf16)[i] > ((statuspkt.adctrigoff + statuspkt.adcbase) & 0x3fff)) { // triggered
+			if (sigprev == 0)		// no previous detection last time
+				adcbatchid++;		// start a new adc batch number
+			sigprev = 1;
+			sigsend = 1;// enable detection processing
+			statuspkt.reserved2++;		// debug no of triggered packets detected
 			ledhang = 1000;
 		}
+		else
+		{
+			sigprev = 0;		// no detection
+		}
+
 		adcbgbase += (*adcbuf16)[i];		// accumulator used to find avg level of signal
 		if (lastsam < (*adcbuf16)[i]) {	// going up
 			goingup = 1;
@@ -306,10 +323,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 		}
 		lastsam = (*adcbuf16)[i];
 	}
-	if (hangcount) {
-		hangcount--;
-	}
-	if (ledhang) {
+
+	if (ledhang) {		// this could be in a low priority process
 		ledhang--;
 		HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_SET);	 // red led on
 	} else {

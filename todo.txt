@@ -6,5 +6,7 @@ netuptime timer is only reset after a reboot
 phys disconnect / reconnect should update netuptime accordingly
 
 phys disconnect should re-instigate dhcp etc
+udp packet numbering should wrap at 24bits on STM - it is 32 bit inc
+
 
 noise + base adc trigger offset needs to be checked  
