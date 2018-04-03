@@ -1069,6 +1069,15 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {  // every second 1 pp
 	/* USER CODE END Callback 1 */
 }
 
+
+
+void setupnotify()
+{
+    /* Store the handle of the calling task. */
+    xTaskToNotify = xTaskGetCurrentTaskHandle();
+}
+
+
 /* USER CODE END 4 */
 
 /* StartDefaultTask function */
@@ -1162,6 +1171,9 @@ void StartDefaultTask(void const * argument)
 				DAC_ALIGN_12B_R);
 		HAL_TIM_Base_Start(&htim7);		// fast interval timer
 #endif
+
+		setupnotify();
+
 		startadc();
 		while (dhcpok) {
 			startudp();		// never returns?
@@ -1177,8 +1189,12 @@ void StarLPTask(void const * argument)
 	/* Infinite loop */
 //	http_server_netconn_init();
 
+
 	for (;;) {
-		osDelay(1000);
+		osDelay(60000);
+		statuspkt.reserved1 = 0;		// debug use count overruns
+		statuspkt.reserved2 = 0;		// debug use adc trigger count
+		statuspkt.reserved3 = 0;	// debug use adc udp sample packet sent count
 	}
   /* USER CODE END StarLPTask */
 }

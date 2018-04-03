@@ -9,6 +9,7 @@
 #include "adcstream.h"
 #include "mydebug.h"
 #include "freertos.h"
+#include "task.h"
 #include "neo7m.h"
 
 HAL_StatusTypeDef adcstat;
@@ -26,7 +27,12 @@ unsigned int sigprev = 0;	// number of streams let after adc thresh exceeded
 unsigned int sigsend = 0;	// flag to tell udp to send sample packet
 uint32_t globaladcavg = 0;		// adc average over milli-secs
 uint32_t globaladcnoise = 0;	// adc noise peaks average over milli-secs
-uint8_t	adcbatchid = 0;		// adc sequence number of a batch of 1..n consecutive triggered buffers
+uint8_t adcbatchid = 0;	// adc sequence number of a batch of 1..n consecutive triggered buffers
+
+/* Stores the handle of the task that will be notified when the
+transmission is complete. */
+volatile TaskHandle_t xTaskToNotify = NULL;
+
 
 // the two vars below should be moved to more appropriate file
 uint8_t gpslocked = 0;			// state of the GPS locked
@@ -270,6 +276,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	uint32_t peaks = 0;				// sum of all peaks
 	uint32_t peakcount = 0;			// number of peaks
 	uint8_t goingup = 0; // slope
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
 	timestamp = TIM2->CNT;			// real time
 
@@ -279,6 +286,16 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 		buf = &((*pktbuf)[UDPBUFSIZE / 4]);
 	}
 	adcbuf16 = &((uint16_t *) *buf)[8];
+	myfullcomplete++;
+
+	if (xTaskToNotify == NULL)
+	{
+		printf("Notif task null\n");
+	}
+	else
+	{
+		vTaskNotifyGiveFromISR( xTaskToNotify, &xHigherPriorityTaskWoken );
+	}
 
 //	(*buf)[0] = UDP seq and packet flags	// set in udpstream.c
 	(*buf)[1] = (myfullcomplete & 0xff) | ((statuspkt.uid & 0x3ffff) << 8)
@@ -288,30 +305,28 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	(*buf)[3] = timestamp;
 
 	if (sigsend) {		// oops overrun
-		statuspkt.reserved1++;
-//		sigsend--;
-		return;
+		statuspkt.reserved1++;		// debug adc overrun udp
+		sigsend = 0;		// cancel it anyway
 	}
 
-	for (i = 0; i < (ADCBUFSIZE / 2); i++) {
-		if ((*adcbuf16)[i] > ((statuspkt.adctrigoff + statuspkt.adcbase) & 0x3fff)) { // triggered
-			if (sigprev == 0)		// no previous detection last time
-				adcbatchid++;		// start a new adc batch number
-			sigprev = 1;
-			sigsend = 1;// enable detection processing
-			statuspkt.reserved2++;		// debug no of triggered packets detected
-			ledhang = 1000;
-		}
-		else
-		{
-			sigprev = 0;		// no detection
+	for (i = 0; i < (ADCBUFSIZE / 2); i++) {		// scan the buffer content
+		if ((*adcbuf16)[i]
+				> ((statuspkt.adctrigoff + statuspkt.adcbase) & 0x3fff)) { // triggered
+			sigsend = 1;
+
+			// signal the detection processing of this packet to the back-end
+			   /* If xHigherPriorityTaskWoken is now set to pdTRUE then a context switch
+			    should be performed to ensure the interrupt returns directly to the highest
+			    priority task.  The macro used for this purpose is dependent on the port in
+			    use and may be called portEND_SWITCHING_ISR(). */
+			    portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 		}
 
-		adcbgbase += (*adcbuf16)[i];		// accumulator used to find avg level of signal
+		adcbgbase += (*adcbuf16)[i];// accumulator used to find avg level of signal
+
 		if (lastsam < (*adcbuf16)[i]) {	// going up
 			goingup = 1;
-		}
-		else	// lastsam is same or larger than this sample
+		} else	// lastsam is same or larger than this sample
 		{
 			if (lastsam > (*adcbuf16)[i]) { 			// going down from peak
 				if ((lastsam > statuspkt.adcbase) && (goingup)) { // we are above base and were going up before
@@ -322,23 +337,36 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 			}
 		}
 		lastsam = (*adcbuf16)[i];
+	} // end for
+
+	if (sigsend) {
+		if (sigprev == 0)		// no previous detection last time
+			adcbatchid++;		// start a new adc batch number
+		ledhang = 1000;
+		statuspkt.reserved2++;	// debug no of triggered packets detected
+		sigprev = 1;	// remember this trigger for next packet
+	} else {
+		sigprev = 0;		// no detection
 	}
 
-	if (ledhang) {		// this could be in a low priority process
+#if 1
+	if (ledhang) {		// this could be moved to the low priority process
 		ledhang--;
 		HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_SET);	 // red led on
 	} else {
 		HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_RESET);	 // red led off
 	}
+#endif
 
 	if (globaladcnoise == 0)
 		globaladcnoise = statuspkt.adcbase;		// dont allow zero peaks
 
 	statuspkt.adctrigoff = TRIG_THRES
-			+ ((globaladcnoise - statuspkt.adcbase) << 2) + (globaladcnoise - statuspkt.adcbase);// thresh notices avg peaks 5x
+			+ ((globaladcnoise - statuspkt.adcbase) << 2)
+			+ (globaladcnoise - statuspkt.adcbase);	// thresh notices avg peaks 5x
 
 //	HAL_GPIO_TogglePin(GPIOB, LD3_Pin);		// Red LED
-	myfullcomplete++;
+
 	samplecnt++;
 	noisecnt++;
 
@@ -360,6 +388,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	statuspkt.adcnoise = (globaladcnoise & 0xfff);	// agc
 	statuspkt.adcbase = (globaladcavg & 0xfff);	// agc
 }
+
 #endif
 
 void startadc() {

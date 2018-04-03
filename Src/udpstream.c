@@ -36,7 +36,8 @@ void dnsfound(const char *name, const ip_addr_t *ipaddr, void *callback_arg) {
 void startudp() {
 	struct udp_pcb *pcb;
 	volatile struct pbuf *p, *p1, *p2, *ps;
-
+	uint32_t ulNotificationValue = 0;
+	const TickType_t xMaxBlockTime = pdMS_TO_TICKS(8000);
 	uint32_t lastsent = 0;
 	uint32_t ip = 0;
 	static uint32_t adcsentcnt = 0, talive = 0;
@@ -45,6 +46,8 @@ void startudp() {
 	static uint8_t lastadcbatchid = 0;
 
 	printf("Startudp:\n");
+	/* Store the handle of the calling task. */
+	xTaskToNotify = xTaskGetCurrentTaskHandle();
 	osDelay(1000);
 
 	/* get new pcbs */
@@ -139,34 +142,56 @@ void startudp() {
 
 	netup = 1;	// this is incomplete - it should be set by the phys layer also
 	printf("Starting UDP Stream loop\n");
+
 	while (1) {
+
 //		p1 = pbuf_alloc(PBUF_TRANSPORT, sizeof(mypbuf), PBUF_ROM);		// header pbuf
 //		p1->tot_len = sizeof(mypbuf);
 //		vTaskDelay(1); //some delay!
 
 		//    memcpy (p1->payload, (lastbuf == 0) ? testbuf : testbuf, ADCBUFLEN);
 
+#if 0
 		while (myfullcomplete == lastsent) // last adc buffer == last sent buffer
-			vTaskDelay(0);						// wait for adc finished
+		osDelay(0);//		vTaskDelay(0);						// wait for adc finished
+#endif
+
+		/* Wait to be notified */
+		while (ulNotificationValue != 1)
+			ulNotificationValue =
+					ulTaskNotifyTake( pdTRUE, xMaxBlockTime); // timeout value not working?
+#if 0
+							ulNotificationValue = ulTaskNotifyTake( pdTRUE,xMaxBlockTime );
+							if( ulNotificationValue == 1 )
+							{
+								/* The transmission ended as expected. */
+							}
+							else
+							{
+								/* The call to ulTaskNotifyTake() timed out. */
+							}
+#endif
 		lastsent = myfullcomplete;
 
 		if (adcbatchid != lastadcbatchid) {	// we need to append/send an end of seq status packet
 			statuspkt.auxstatus1 = (statuspkt.auxstatus1 & 0xffffff00)
 					| lastadcbatchid;
 			lastadcbatchid = adcbatchid;
+
 			while (ps->ref != 1) {  // old packet not finished with yet
 				printf("******* ps->ref = %d *******\n", ps->ref);
 
 				((uint8_t *) (ps->payload))[3] = 1;  // status pkt type
-				err = udp_sendto(pcb, ps, &destip /*IP_ADDR_BROADCAST*/,
-				UDP_PORT_NO);
+
+				err = udp_sendto(pcb, ps, &destip, UDP_PORT_NO);
 				if (err != ERR_OK) {
 					printf("startudp: ps udp_sendto err %i\n", err);
 					vTaskDelay(1999); //some delay!
 				}
-				while (ps->ref != 1) {  // old packet not finished with yet
-					; // but we need wait to update the data packet next, so wait
+				while (ps->ref != 1) { // old packet not finished with yet
+					vTaskDelay(0); // but we need wait to update the data packet next, so wait
 				}
+
 				statuspkt.udpcount++;
 				statuspkt.adcpktssent = 0;
 			}
@@ -184,18 +209,18 @@ void startudp() {
 			((uint8_t *) (p->payload))[2] = (statuspkt.udpcount & 0xff0000)
 					>> 16;
 
-			while (p->ref != 1) {		// old packet not finished with yet
+			while (p->ref != 1) {	// old packet not finished with yet
 				printf("******* p->ref = %d *******\n", p->ref);
 			}
 
 			err = udp_sendto(pcb, p, &destip, UDP_PORT_NO);
-			statuspkt.reserved3++;		// debug no of sample packets set
+			statuspkt.reserved3++;	// debug no of sample packets set
 			if (err != ERR_OK) {
 				printf("startudp: p udp_sendto err %i\n", err);
 				vTaskDelay(1999); //some delay!
 			}
 			sigsend = 0;		// assume its sent
-			statuspkt.adcpktssent++;		// UDP sample packet counterr
+			statuspkt.adcpktssent++;	// UDP sample packet counterr
 			statuspkt.udpcount++; // UDP packet number - global var used by all
 			while (ps->ref != 1) {  // old packet not finished with yet
 				; // but we need wait to update the data packet next, so wait
@@ -206,7 +231,7 @@ void startudp() {
 		} // if sigsend
 		else {		// no adc sample to send
 #ifdef TESTING
-			if ((t1sec != talive) && (t1sec % 10 == 0)) { // this is a temporary mech to send timed status pkts...
+			if ((t1sec != talive) && (t1sec % 2 == 0)) { // this is a temporary mech to send timed status pkts...
 				talive = t1sec;
 #else
 				if ((t1sec != talive) && (t1sec % 120 == 0)) { // this is a temporary mech to send timed status pkts...
@@ -228,12 +253,9 @@ void startudp() {
 					; // but we need wait to update the data packet next, so wait
 				}
 				statuspkt.udpcount++;
-
-				statuspkt.reserved1 = 0;		// debug use count overruns
-				statuspkt.reserved2 = 0;		// debug use adc trigger count
-				statuspkt.reserved3 = 0;	// debug use adc udp sample packet sent count
 			}
 		}
+//		osDelay(0);
 	} // forever while
 }
 //       pbuf_free(p1); //De-allocate packet buffer

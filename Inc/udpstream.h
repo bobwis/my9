@@ -22,5 +22,6 @@ void startudp(void);
 
 
 #define UDP_PORT_NO 5000
+extern TaskHandle_t xTaskToNotify;
 
 #endif /* UDPSTREAM_H_ */
