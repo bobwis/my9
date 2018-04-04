@@ -6,7 +6,11 @@ netuptime timer is only reset after a reboot
 phys disconnect / reconnect should update netuptime accordingly
 
 phys disconnect should re-instigate dhcp etc
-udp packet numbering should wrap at 24bits on STM - it is 32 bit inc
+udp packet numbering should wrap at 24bits on STM - it is 32 bit iinternally
 
 
-noise + base adc trigger offset needs to be checked  
+noise + base adc trigger offset needs to be checked  - (its going wrong on high input values 3/4/18)
+
+FreeRTOS xTaskToNotify timeout not operaing as advertised? - check and fix
+
+status packet missing from sample sequence?

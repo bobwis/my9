@@ -1,5 +1,5 @@
 /*
- * udpstream.c
+ printf("******* ps->ref = %d *******\n", ps->ref); * udpstream.c
  *
  *  Created on: 22Dec.,2017
  *      Author: bob
@@ -37,7 +37,7 @@ void startudp() {
 	struct udp_pcb *pcb;
 	volatile struct pbuf *p, *p1, *p2, *ps;
 	uint32_t ulNotificationValue = 0;
-	const TickType_t xMaxBlockTime = pdMS_TO_TICKS(8000);
+	const TickType_t xMaxBlockTime = pdMS_TO_TICKS(1000);
 	uint32_t lastsent = 0;
 	uint32_t ip = 0;
 	static uint32_t adcsentcnt = 0, talive = 0;
@@ -157,46 +157,45 @@ void startudp() {
 #endif
 
 		/* Wait to be notified */
-		while (ulNotificationValue != 1)
-			ulNotificationValue =
-					ulTaskNotifyTake( pdTRUE, xMaxBlockTime); // timeout value not working?
+		ulNotificationValue = ulTaskNotifyTake( pdTRUE, xMaxBlockTime);
 #if 0
-							ulNotificationValue = ulTaskNotifyTake( pdTRUE,xMaxBlockTime );
-							if( ulNotificationValue == 1 )
-							{
-								/* The transmission ended as expected. */
-							}
-							else
-							{
-								/* The call to ulTaskNotifyTake() timed out. */
-							}
+		if (ulNotificationValue == 1) {
+			/* The transmission ended as expected. */
+		} else {
+			/* The call to ulTaskNotifyTake() timed out. */
+			printf("ulNotificationValue = %d\n",ulNotificationValue );
+		}
 #endif
 		lastsent = myfullcomplete;
 
-		if (adcbatchid != lastadcbatchid) {	// we need to append/send an end of seq status packet
+		if (adcbatchid != lastadcbatchid) {
+			// we need to append/send an end of seq status packet
 			statuspkt.auxstatus1 = (statuspkt.auxstatus1 & 0xffffff00)
 					| lastadcbatchid;
 			lastadcbatchid = adcbatchid;
 
-			while (ps->ref != 1) {  // old packet not finished with yet
+			while (ps->ref != 1) {  // old packet send not finished with yet
 				printf("******* ps->ref = %d *******\n", ps->ref);
-
-				((uint8_t *) (ps->payload))[3] = 1;  // status pkt type
-
-				err = udp_sendto(pcb, ps, &destip, UDP_PORT_NO);
-				if (err != ERR_OK) {
-					printf("startudp: ps udp_sendto err %i\n", err);
-					vTaskDelay(1999); //some delay!
-				}
-				while (ps->ref != 1) { // old packet not finished with yet
-					vTaskDelay(0); // but we need wait to update the data packet next, so wait
-				}
-
-				statuspkt.udpcount++;
-				statuspkt.adcpktssent = 0;
+				vTaskDelay(0); // but we need wait
 			}
+			((uint8_t *) (ps->payload))[3] = 1;  // status pkt type
+
+			err = udp_sendto(pcb, ps, &destip, UDP_PORT_NO);
+			if (err != ERR_OK) {
+				printf("startudp: end seq status: udp_sendto err %i\n", err);
+				vTaskDelay(1999); //some delay!
+			}
+			while (ps->ref != 1) { // old packet send not finished with yet
+				printf("******* end seq status: ps->ref = %d *******\n",
+						ps->ref);
+				vTaskDelay(0); // but we need wait to update the data packet next, so wait
+			}
+			statuspkt.udpcount++;
+			statuspkt.adcpktssent = 0;
 		}
+
 		if (sigsend) {		// only send if adc threshold was exceeded
+			// we need to send a sample packet
 
 			HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_SET);	// blue led on
 
@@ -210,7 +209,8 @@ void startudp() {
 					>> 16;
 
 			while (p->ref != 1) {	// old packet not finished with yet
-				printf("******* p->ref = %d *******\n", p->ref);
+				printf("*******send sample failed p->ref = %d *******\n",
+						p->ref);
 			}
 
 			err = udp_sendto(pcb, p, &destip, UDP_PORT_NO);
@@ -223,16 +223,20 @@ void startudp() {
 			statuspkt.adcpktssent++;	// UDP sample packet counterr
 			statuspkt.udpcount++; // UDP packet number - global var used by all
 			while (ps->ref != 1) {  // old packet not finished with yet
-				; // but we need wait to update the data packet next, so wait
+				printf("******* end sample status: ps->ref = %d *******\n",
+						ps->ref);
+				vTaskDelay(0); // but we need wait to update the data packet next, so wait
 			}
 
 			HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_RESET); // blue led off
 
 		} // if sigsend
-		else {		// no adc sample to send
+		else {		// no adc sample to send, so send timed status
 #ifdef TESTING
-			if ((t1sec != talive) && (t1sec % 2 == 0)) { // this is a temporary mech to send timed status pkts...
-				talive = t1sec;
+//			if ((t1sec != talive)) { //} && (t1sec % 2 == 0)) { // this is a temporary mech to send timed status pkts...
+//			talive = t1sec;
+			{
+
 #else
 				if ((t1sec != talive) && (t1sec % 120 == 0)) { // this is a temporary mech to send timed status pkts...
 					talive = t1sec;
@@ -240,7 +244,8 @@ void startudp() {
 				statuspkt.auxstatus1 = (statuspkt.auxstatus1 & 0xffffff00)
 						| lastadcbatchid;
 				while (ps->ref != 1) { // old packet not finished with yet
-					printf("******* ps->ref = %d *******\n", ps->ref);
+					printf("******* timed status1: ps->ref = %d *******\n",
+							ps->ref);
 				}
 				((uint8_t *) (ps->payload))[3] = 2; // timed status pkt type
 				err = udp_sendto(pcb, ps, &destip /*IP_ADDR_BROADCAST*/,
@@ -250,14 +255,15 @@ void startudp() {
 					vTaskDelay(1999); //some delay!
 				}
 				while (ps->ref != 1) { // old packet not finished with yet
-					; // but we need wait to update the data packet next, so wait
+					printf("******* timed status2: ps->ref = %d *******\n",
+							ps->ref);
+					vTaskDelay(0); // but we need wait to update the data packet next, so wait
 				}
 				statuspkt.udpcount++;
 			}
 		}
-//		osDelay(0);
 	} // forever while
 }
+
 //       pbuf_free(p1); //De-allocate packet buffer
-//	   vTaskDelay( 100 ); //some delay!
 

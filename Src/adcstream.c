@@ -288,15 +288,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	adcbuf16 = &((uint16_t *) *buf)[8];
 	myfullcomplete++;
 
-	if (xTaskToNotify == NULL)
-	{
-		printf("Notif task null\n");
-	}
-	else
-	{
-		vTaskNotifyGiveFromISR( xTaskToNotify, &xHigherPriorityTaskWoken );
-	}
-
 //	(*buf)[0] = UDP seq and packet flags	// set in udpstream.c
 	(*buf)[1] = (myfullcomplete & 0xff) | ((statuspkt.uid & 0x3ffff) << 8)
 			| (rtseconds << 26);	// ADC completed packet counter (24 bits)
@@ -313,13 +304,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 		if ((*adcbuf16)[i]
 				> ((statuspkt.adctrigoff + statuspkt.adcbase) & 0x3fff)) { // triggered
 			sigsend = 1;
-
-			// signal the detection processing of this packet to the back-end
-			   /* If xHigherPriorityTaskWoken is now set to pdTRUE then a context switch
-			    should be performed to ensure the interrupt returns directly to the highest
-			    priority task.  The macro used for this purpose is dependent on the port in
-			    use and may be called portEND_SWITCHING_ISR(). */
-			    portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 		}
 
 		adcbgbase += (*adcbuf16)[i];// accumulator used to find avg level of signal
@@ -387,6 +371,21 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	}
 	statuspkt.adcnoise = (globaladcnoise & 0xfff);	// agc
 	statuspkt.adcbase = (globaladcavg & 0xfff);	// agc
+
+	if (xTaskToNotify == NULL)
+	{
+		printf("Notif task null\n");
+	}
+	else if (sigsend)
+	{
+		vTaskNotifyGiveFromISR( xTaskToNotify, &xHigherPriorityTaskWoken );
+		// signal the detection processing of this packet to the back-end
+		   /* If xHigherPriorityTaskWoken is now set to pdTRUE then a context switch
+		    should be performed to ensure the interrupt returns directly to the highest
+		    priority task.  The macro used for this purpose is dependent on the port in
+		    use and may be called portEND_SWITCHING_ISR(). */
+		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+	}
 }
 
 #endif
