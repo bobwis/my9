@@ -30,9 +30,8 @@ uint32_t globaladcnoise = 0;	// adc noise peaks average over milli-secs
 uint8_t adcbatchid = 0;	// adc sequence number of a batch of 1..n consecutive triggered buffers
 
 /* Stores the handle of the task that will be notified when the
-transmission is complete. */
+ transmission is complete. */
 volatile TaskHandle_t xTaskToNotify = NULL;
-
 
 // the two vars below should be moved to more appropriate file
 uint8_t gpslocked = 0;			// state of the GPS locked
@@ -301,25 +300,32 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	}
 
 	for (i = 0; i < (ADCBUFSIZE / 2); i++) {		// scan the buffer content
+
+//		 for i from 1 to n								// high pass filter
+//		     y[i] := a * (y[i-1] + x[i] - x[i-1])
+
 		if ((*adcbuf16)[i]
 				> ((statuspkt.adctrigoff + statuspkt.adcbase) & 0x3fff)) { // triggered
 			sigsend = 1;
 		}
 
-		adcbgbase += (*adcbuf16)[i];// accumulator used to find avg level of signal
+		adcbgbase += (*adcbuf16)[i]; // accumulator used to find avg level of signal
 
-		if (lastsam < (*adcbuf16)[i]) {	// going up
-			goingup = 1;
-		} else	// lastsam is same or larger than this sample
-		{
-			if (lastsam > (*adcbuf16)[i]) { 			// going down from peak
-				if ((lastsam > statuspkt.adcbase) && (goingup)) { // we are above base and were going up before
-					peaks += lastsam;
-					peakcount++;
+		if ((*adcbuf16)[i] > statuspkt.adcbase) { // only interested above base level
+			if (lastsam < (*adcbuf16)[i]) {	// going up
+				goingup = 1;
+			} else	// lastsam is same or larger than this sample
+			{
+				if (lastsam > (*adcbuf16)[i]) { 		// going down from peak
+					if ((lastsam > statuspkt.adcbase) && (goingup)) { // we are above base and were going up before
+						peaks += lastsam;
+						peakcount++;
+					}
+					goingup = 0;
 				}
-				goingup = 0;
 			}
-		}
+		} else
+			goingup = 0;
 		lastsam = (*adcbuf16)[i];
 	} // end for
 
@@ -346,8 +352,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 		globaladcnoise = statuspkt.adcbase;		// dont allow zero peaks
 
 	statuspkt.adctrigoff = TRIG_THRES
-			+ ((globaladcnoise - statuspkt.adcbase) << 2)
-			+ (globaladcnoise - statuspkt.adcbase);	// thresh notices avg peaks 5x
+			+ (abs(globaladcnoise - statuspkt.adcbase));
+
+	if (statuspkt.adctrigoff > 4095)
+		statuspkt.adctrigoff = 4095;
 
 //	HAL_GPIO_TogglePin(GPIOB, LD3_Pin);		// Red LED
 
@@ -355,16 +363,18 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	noisecnt++;
 
 	avg += adcbgbase / (ADCBUFSIZE / 2);
-	if (samplecnt == 2048) {			// 2k adc bufffers sampled
-		globaladcavg = avg >> 11;			// approx 0.5 sec?
+	if (samplecnt == 2048) {			// 2k adc bufffers sampled approx 0.5 sec
+		globaladcavg = avg >> 11;
 		adcbgbase = 0;
 		avg = 0;
 		samplecnt = 0;
 	}
 
-	peaks /= peakcount;	// average amplitude of peaks (noise) in this buffer
-	noise += peaks;		// accumulator of avg noise buffer
-	if (noisecnt == 256) {				// enough buffers sampled
+	if (peakcount) {
+		peaks /= peakcount;	// average amplitude of peaks (noise) in this buffer
+		noise += peaks;		// accumulator of avg noise buffer
+	}
+	if (noisecnt == 256) {				// enough buffers sampled (approx 70mS)
 		globaladcnoise = noise >> 8;
 		noise = 0;
 		noisecnt = 0;
@@ -372,19 +382,16 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	statuspkt.adcnoise = (globaladcnoise & 0xfff);	// agc
 	statuspkt.adcbase = (globaladcavg & 0xfff);	// agc
 
-	if (xTaskToNotify == NULL)
-	{
-		printf("Notif task null\n");
-	}
-	else if (sigsend)
-	{
-		vTaskNotifyGiveFromISR( xTaskToNotify, &xHigherPriorityTaskWoken );
+	if (xTaskToNotify == NULL) {
+		printf("Notify task null\n");
+	} else if (sigsend) {
+		vTaskNotifyGiveFromISR(xTaskToNotify, &xHigherPriorityTaskWoken);
 		// signal the detection processing of this packet to the back-end
-		   /* If xHigherPriorityTaskWoken is now set to pdTRUE then a context switch
-		    should be performed to ensure the interrupt returns directly to the highest
-		    priority task.  The macro used for this purpose is dependent on the port in
-		    use and may be called portEND_SWITCHING_ISR(). */
-		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+		/* If xHigherPriorityTaskWoken is now set to pdTRUE then a context switch
+		 should be performed to ensure the interrupt returns directly to the highest
+		 priority task.  The macro used for this purpose is dependent on the port in
+		 use and may be called portEND_SWITCHING_ISR(). */
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 	}
 }
 
@@ -392,7 +399,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 
 void startadc() {
 	int i, lastbuf = 0;
-	uint16_t *adcbufdum1, *adcbufdum2;		// debug
+//	uint16_t *adcbufdum1, *adcbufdum2;		// debug
 //	adcbufdum1 = pvPortMalloc(UDPBUFSIZE);	//  dummy buffer
 //	adcbufdum2 = pvPortMalloc(UDPBUFSIZE);	//  dummy buffer
 

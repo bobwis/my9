@@ -16,7 +16,7 @@
 #define ADCBUFHEAD 16
 #define ADCBUFSIZE (UDPBUFSIZE-ADCBUFHEAD)
 
-#define TRIG_THRES 150			// adc trigger level above avg noise (should be calculated, not fixed)
+#define TRIG_THRES 170			// adc trigger level above avg noise (should be calculated, not fixed)
 
 typedef uint32_t adcbuffer[ADCBUFSIZE/2];
 typedef uint16_t adc16buffer[ADCBUFSIZE];
