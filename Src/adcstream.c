@@ -434,7 +434,7 @@ void startadc() {
 			&(*pktbuf)[(ADCBUFHEAD / 4) + (ADCBUFSIZE / 4) + (ADCBUFHEAD / 4)];	// leave room in start of 2nd buffer
 
 	adcstat = HAL_ADCEx_MultiModeStart_DBDMA(&hadc1, adcbuf1, adcbuf2,
-			(ADCBUFSIZE / 4));		// len in 16bit words
+			(ADCBUFSIZE / 2));		// len in 16bit words
 
 //	adcstat = HAL_ADCEx_MultiModeStart_DBDMA(&hadc1, adcbufdum1, adcbufdum2, (ADCBUFSIZE / 4));		// DEBUG
 	printf("ADC_MM_Start returned %u\r\n", adcstat);

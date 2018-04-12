@@ -1193,9 +1193,9 @@ void StarLPTask(void const * argument)
 	for (;;) {
 		osDelay(60000);
 #ifdef TESTING
-		statuspkt.reserved1 = 0;		// debug use count overruns
-		statuspkt.reserved2 = 0;		// debug use adc trigger count
-		statuspkt.reserved3 = 0;	// debug use adc udp sample packet sent count
+		statuspkt.adcudpover = 0;		// debug use count overruns
+		statuspkt.trigcount = 0;		// debug use adc trigger count
+		statuspkt.udpsent = 0;	// debug use adc udp sample packet sent count
 #endif
 	}
   /* USER CODE END StarLPTask */
