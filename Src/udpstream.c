@@ -135,9 +135,9 @@ void startudp() {
 	osDelay(7000);
 
 	statuspkt.auxstatus1 = 0;
-	statuspkt.reserved1 = 0;		// debug use count overruns
-	statuspkt.reserved2 = 0;		// debug use adc trigger count
-	statuspkt.reserved3 = 0;	// debug use adc udp sample packet sent count
+	statuspkt.adcudpover = 0;		// debug use count overruns
+	statuspkt.trigcount = 0;		// debug use adc trigger count
+	statuspkt.udpsent = 0;	// debug use adc udp sample packet sent count
 	statuspkt.telltale1 = 0xDEC0EDFE; //  0xFEEDC0DE marker at the end of each status packet
 
 	netup = 1;	// this is incomplete - it should be set by the phys layer also
@@ -214,7 +214,7 @@ void startudp() {
 			}
 
 			err = udp_sendto(pcb, p, &destip, UDP_PORT_NO);
-			statuspkt.reserved3++;	// debug no of sample packets set
+			statuspkt.udpsent++;	// debug no of sample packets set
 			if (err != ERR_OK) {
 				printf("startudp: p udp_sendto err %i\n", err);
 				vTaskDelay(1999); //some delay!

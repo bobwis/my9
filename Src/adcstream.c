@@ -295,7 +295,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	(*buf)[3] = timestamp;
 
 	if (sigsend) {		// oops overrun
-		statuspkt.reserved1++;		// debug adc overrun udp
+		statuspkt.adcudpover++;		// debug adc overrun udp
 		sigsend = 0;		// cancel it anyway
 	}
 
@@ -333,7 +333,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 		if (sigprev == 0)		// no previous detection last time
 			adcbatchid++;		// start a new adc batch number
 		ledhang = 1000;
-		statuspkt.reserved2++;	// debug no of triggered packets detected
+		statuspkt.trigcount++;	// debug no of triggered packets detected
 		sigprev = 1;	// remember this trigger for next packet
 	} else {
 		sigprev = 0;		// no detection
