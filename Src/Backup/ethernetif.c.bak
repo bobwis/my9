@@ -287,7 +287,6 @@ static void low_level_init(struct netif *netif)
   
   /* maximum transfer unit */
   netif->mtu = 1500;
- // netif->mtu = 576;
   
   /* Accept broadcast address and ARP traffic */
   /* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */

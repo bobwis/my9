@@ -12,7 +12,7 @@
 
 void startudp(void);
 
-#define MY_UID 0x12347		// 18 bits  "serial number" of the lightning detector
+#define MY_UID 0x12346		// 18 bits  "serial number" of the lightning detector
 
 #ifdef TESTING
 #define SERVER_DESTINATION "lightning.local"

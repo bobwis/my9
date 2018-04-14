@@ -106,7 +106,7 @@ void startudp() {
 	printf("\nTarget IP at %u.%u.%u.%u\n", ip & 0xff, (ip & 0xff00) >> 8,
 			(ip & 0xff0000) >> 16, (ip & 0xff000000) >> 24);
 
-	p1 = pbuf_alloc(PBUF_TRANSPORT, UDPBUFSIZE, PBUF_ROM);		// pk1 pbuf
+	p1 = pbuf_alloc(PBUF_TRANSPORT, UDPBUFSIZE, PBUF_REF /* PBUF_ROM */);		// pk1 pbuf
 
 	if (p1 == NULL) {
 		printf("startudp: p1 buf_alloc failed!\n");
@@ -115,7 +115,7 @@ void startudp() {
 	p1->payload = &(*pktbuf)[0];
 //	p1->len = ADCBUFSIZE;
 
-	p2 = pbuf_alloc(PBUF_TRANSPORT, UDPBUFSIZE, PBUF_ROM);		// pk1 pbuf
+	p2 = pbuf_alloc(PBUF_TRANSPORT, UDPBUFSIZE, PBUF_REF /* PBUF_ROM */);		// pk1 pbuf
 	if (p2 == NULL) {
 		printf("startudp: p2 buf_alloc failed!\n");
 		return;
@@ -197,7 +197,7 @@ void startudp() {
 		if (sigsend) {		// only send if adc threshold was exceeded
 			// we need to send a sample packet
 
-			HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_SET);	// blue led on
+//			HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_SET);	// blue led on
 
 			p = (lastsent & 1) ? p1 : p2;	// which dma buffer to send
 
@@ -219,7 +219,7 @@ void startudp() {
 				printf("startudp: p udp_sendto err %i\n", err);
 				vTaskDelay(1999); //some delay!
 			}
-			sigsend = 0;		// assume its sent
+//			sigsend = 0;		// assume its sent
 			statuspkt.adcpktssent++;	// UDP sample packet counterr
 			statuspkt.udpcount++; // UDP packet number - global var used by all
 			while (ps->ref != 1) {  // old packet not finished with yet
@@ -228,8 +228,8 @@ void startudp() {
 				vTaskDelay(0); // but we need wait to update the data packet next, so wait
 			}
 
-			HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_RESET); // blue led off
-
+//			HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_RESET); // blue led off
+			sigsend = 0;		// assume its sent
 		} // if sigsend
 		else {		// no adc sample to send, so send timed status
 #ifdef TESTING

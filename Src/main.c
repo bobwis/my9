@@ -225,7 +225,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityAboveNormal, 0, 1024);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 1024);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of LPTask */
@@ -1186,17 +1186,21 @@ void StartDefaultTask(void const * argument)
 void StarLPTask(void const * argument)
 {
   /* USER CODE BEGIN StarLPTask */
+	uint32_t timestamp1, timestamp2;
 	/* Infinite loop */
 //	http_server_netconn_init();
 
+	osDelay(50000);
+	statuspkt.adcudpover = 0;		// debug use count overruns
+	statuspkt.trigcount = 0;		// debug use adc trigger count
+	statuspkt.udpsent = 0;	// debug use adc udp sample packet sent count
 
 	for (;;) {
-		osDelay(60000);
-#ifdef TESTING
-		statuspkt.adcudpover = 0;		// debug use count overruns
-		statuspkt.trigcount = 0;		// debug use adc trigger count
-		statuspkt.udpsent = 0;	// debug use adc udp sample packet sent count
-#endif
+		osDelay(10000);
+		timestamp1 = TIM2->CNT;
+		osDelay(1);
+		timestamp2 = TIM2->CNT;
+		printf("TIM2=%u TIM2=%u\n", timestamp1, timestamp2);
 	}
   /* USER CODE END StarLPTask */
 }

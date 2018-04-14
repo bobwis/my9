@@ -38,6 +38,7 @@ uint8_t gpslocked = 0;			// state of the GPS locked
 uint8_t netup = 0;				// state of LAN up / down
 uint8_t rtseconds = 0;			// real time seconds
 
+
 /**
  * @brief  DMA transfer complete callback.
  * @param  hdma: pointer to a DMA_HandleTypeDef structure that contains
@@ -50,8 +51,7 @@ void ADC_MultiModeDMAConvCplt(DMA_HandleTypeDef *hdma) {
 			(ADC_HandleTypeDef*) ((DMA_HandleTypeDef*) hdma)->Parent;
 
 	/* Update state machine on conversion status if not in error state */
-	if (HAL_IS_BIT_CLR(hadc->State,
-			HAL_ADC_STATE_ERROR_INTERNAL | HAL_ADC_STATE_ERROR_DMA)) {
+	if (HAL_IS_BIT_CLR(hadc->State,HAL_ADC_STATE_ERROR_INTERNAL | HAL_ADC_STATE_ERROR_DMA)) {
 		/* Update ADC state machine */
 		SET_BIT(hadc->State, HAL_ADC_STATE_REG_EOC);
 
@@ -97,10 +97,12 @@ void ADC_MultiModeDMAHalfConvCplt(DMA_HandleTypeDef *hdma) {
 	ADC_HandleTypeDef* hadc =
 			(ADC_HandleTypeDef*) ((DMA_HandleTypeDef*) hdma)->Parent;
 	/* Conversion complete callback */
-//  HAL_ADCEx_MultiModeStop_DMA(hadc);		// freeze
+
+//HAL_ADCEx_MultiModeStop_DMA(hadc);		// freeze
 //HAL_ADC_Stop(&hadc1);
-// HAL_DMA_Abort(&hadc1);
-	myhalfcomplete++;
+//HAL_DMA_Abort(&hadc1);
+
+//	myhalfcomplete++;
 	HAL_ADC_ConvHalfCpltCallback(hadc);
 }
 
@@ -189,9 +191,11 @@ HAL_StatusTypeDef HAL_ADCEx_MultiModeStart_DBDMA(ADC_HandleTypeDef* hadc,
 		/* Set the DMA transfer complete callback */
 		hadc->DMA_Handle->XferCpltCallback = ADC_MultiModeDMAConvCplt;
 
+
 		/* Set the DMA half transfer complete callback */
-//		hadc->DMA_Handle->XferHalfCpltCallback = ADC_MultiModeDMAHalfConvCplt;
-		hadc->DMA_Handle->XferHalfCpltCallback = NULL;
+
+		hadc->DMA_Handle->XferHalfCpltCallback = ADC_MultiModeDMAHalfConvCplt;
+//		hadc->DMA_Handle->XferHalfCpltCallback = NULL;
 
 		/* Set the DMA error callback */
 		hadc->DMA_Handle->XferErrorCallback = ADC_MultiModeDMAError;
@@ -261,7 +265,15 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done
 }
 #endif
 
-#if 1
+
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DMA half complete)
+{
+	while ((DMA2_Stream4->CR & (1<<19)) == 1)		// still doing buffer
+		;		// wait
+	myhalfcomplete = 1;		// second buffer has completed
+	HAL_ADC_ConvCpltCallback(hadc); 	// then process
+}
+
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DMA complete)
 {
 	register uint32_t timestamp, i;
@@ -272,23 +284,47 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	static uint32_t ledhang = 0;
 	static uint32_t avghi = 0;		// avg of all the peaks
 	static uint16_t lastsam = 0;	// about half adc res
+	static uint8_t adcseq = 0;		// adc sequence number
 	uint32_t peaks = 0;				// sum of all peaks
 	uint32_t peakcount = 0;			// number of peaks
 	uint8_t goingup = 0; // slope
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	volatile static uint32_t stamp[16] = {0,0,0,0,0,0,0,0};
 
 	timestamp = TIM2->CNT;			// real time
+	stamp[(adcseq & 0xf)] = timestamp;
 
+//	HAL_ADCEx_MultiModeStop_DMA(hadc);		// freeze
+//	HAL_ADC_Stop(&hadc1);
+//	HAL_DMA_Abort(&hadc1);
+
+	HAL_GPIO_TogglePin(GPIOB, LD2_Pin);	// blue led
+
+	if ((myhalfcomplete & 1) == 1) {		// second buffer is ready
+		myhalfcomplete = 0;
+		myfullcomplete = 0;
+//		buf = pktbuf;
+		buf = &((*pktbuf)[UDPBUFSIZE / 4]);
+	}
+	else {
+		buf = pktbuf;
+//		buf = &((*pktbuf)[UDPBUFSIZE / 4]);
+	}
+
+
+#if 0
 	if ((myfullcomplete & 1) == 0) {	// select the correct buffer of the two
 		buf = pktbuf;
 	} else {
 		buf = &((*pktbuf)[UDPBUFSIZE / 4]);
 	}
+#endif
 	adcbuf16 = &((uint16_t *) *buf)[8];
 	myfullcomplete++;
 
+
 //	(*buf)[0] = UDP seq and packet flags	// set in udpstream.c
-	(*buf)[1] = (myfullcomplete & 0xff) | ((statuspkt.uid & 0x3ffff) << 8)
+	(*buf)[1] = (adcseq++) | ((statuspkt.uid & 0x3ffff) << 8)
 			| (rtseconds << 26);	// ADC completed packet counter (24 bits)
 //	(*buf)[2] = 1pps capture cnt;		// 1pps counter capture  (set by DMA - copied below)
 	(*buf)[2] = adcbatchid;		// 8 bits of 32 used
@@ -395,13 +431,12 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	}
 }
 
-#endif
 
 void startadc() {
 	int i, lastbuf = 0;
-//	uint16_t *adcbufdum1, *adcbufdum2;		// debug
+	uint16_t *adcbufdum1, *adcbufdum2;		// debug
 //	adcbufdum1 = pvPortMalloc(UDPBUFSIZE);	//  dummy buffer
-//	adcbufdum2 = pvPortMalloc(UDPBUFSIZE);	//  dummy buffer
+	adcbufdum2 = pvPortMalloc(UDPBUFSIZE);	//  dummy buffer
 
 	statuspkt.clktrim = 107000000;
 	statuspkt.adcpktssent = 0;
@@ -433,8 +468,7 @@ void startadc() {
 	adcbuf2 =
 			&(*pktbuf)[(ADCBUFHEAD / 4) + (ADCBUFSIZE / 4) + (ADCBUFHEAD / 4)];	// leave room in start of 2nd buffer
 
-	adcstat = HAL_ADCEx_MultiModeStart_DBDMA(&hadc1, adcbuf1, adcbuf2,
-			(ADCBUFSIZE / 2));		// len in 16bit words
+	adcstat = HAL_ADCEx_MultiModeStart_DBDMA(&hadc1, adcbuf1, adcbuf2, (ADCBUFSIZE/2));		// len in 16bit words
 
 //	adcstat = HAL_ADCEx_MultiModeStart_DBDMA(&hadc1, adcbufdum1, adcbufdum2, (ADCBUFSIZE / 4));		// DEBUG
 	printf("ADC_MM_Start returned %u\r\n", adcstat);

@@ -13,7 +13,7 @@
 
 
 // TESTING Speeds up the frequency of status packets
-#if		0
+#if		1
 #define TESTING
 #endif
 

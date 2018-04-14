@@ -276,8 +276,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	uint32_t peakcount = 0;			// number of peaks
 	uint8_t goingup = 0; // slope
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	volatile static uint32_t stamp[4] = {0,0,0,0};
 
 	timestamp = TIM2->CNT;			// real time
+	stamp[(myfullcomplete & 3)] = timestamp;
+	HAL_GPIO_TogglePin(GPIOB, LD2_Pin);	// blue led
 
 	if ((myfullcomplete & 1) == 0) {	// select the correct buffer of the two
 		buf = pktbuf;
@@ -399,9 +402,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 
 void startadc() {
 	int i, lastbuf = 0;
-//	uint16_t *adcbufdum1, *adcbufdum2;		// debug
+	uint16_t *adcbufdum1, *adcbufdum2;		// debug
 //	adcbufdum1 = pvPortMalloc(UDPBUFSIZE);	//  dummy buffer
-//	adcbufdum2 = pvPortMalloc(UDPBUFSIZE);	//  dummy buffer
+	adcbufdum2 = pvPortMalloc(UDPBUFSIZE);	//  dummy buffer
 
 	statuspkt.clktrim = 107000000;
 	statuspkt.adcpktssent = 0;
@@ -433,8 +436,8 @@ void startadc() {
 	adcbuf2 =
 			&(*pktbuf)[(ADCBUFHEAD / 4) + (ADCBUFSIZE / 4) + (ADCBUFHEAD / 4)];	// leave room in start of 2nd buffer
 
-	adcstat = HAL_ADCEx_MultiModeStart_DBDMA(&hadc1, adcbuf1, adcbuf2,
-			(ADCBUFSIZE / 4));		// len in 16bit words
+	adcstat = HAL_ADCEx_MultiModeStart_DBDMA(&hadc1, adcbuf1, adcbufdum2 /*adcbuf2*/,
+			(ADCBUFSIZE/2));		// len in 16bit words
 
 //	adcstat = HAL_ADCEx_MultiModeStart_DBDMA(&hadc1, adcbufdum1, adcbufdum2, (ADCBUFSIZE / 4));		// DEBUG
 	printf("ADC_MM_Start returned %u\r\n", adcstat);
