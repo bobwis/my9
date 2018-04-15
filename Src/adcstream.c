@@ -20,8 +20,7 @@ adcbuffer *pktbuf;
 
 uint32_t t2cap[1];  // dma writes t2 capture value on 1pps edge
 
-unsigned int myfullcomplete = 0;
-unsigned int myhalfcomplete = 0;
+unsigned int dmabufno = 0;	// the last filled buffer 0 or 1
 
 unsigned int sigprev = 0;	// number of streams let after adc thresh exceeded
 unsigned int sigsend = 0;	// flag to tell udp to send sample packet
@@ -39,6 +38,8 @@ uint8_t netup = 0;				// state of LAN up / down
 uint8_t rtseconds = 0;			// real time seconds
 
 
+
+
 /**
  * @brief  DMA transfer complete callback.
  * @param  hdma: pointer to a DMA_HandleTypeDef structure that contains
@@ -49,7 +50,7 @@ void ADC_MultiModeDMAConvCplt(DMA_HandleTypeDef *hdma) {
 	/* Retrieve ADC handle corresponding to current DMA handle */
 	ADC_HandleTypeDef* hadc =
 			(ADC_HandleTypeDef*) ((DMA_HandleTypeDef*) hdma)->Parent;
-
+//DMA2->HIFCR |= (uint32_t)0x0000001F;
 	/* Update state machine on conversion status if not in error state */
 	if (HAL_IS_BIT_CLR(hadc->State,HAL_ADC_STATE_ERROR_INTERNAL | HAL_ADC_STATE_ERROR_DMA)) {
 		/* Update ADC state machine */
@@ -61,6 +62,7 @@ void ADC_MultiModeDMAConvCplt(DMA_HandleTypeDef *hdma) {
 		/*       The test of scan sequence on going is done either with scan    */
 		/*       sequence disabled or with end of conversion flag set to        */
 		/*       of end of sequence.                                            */
+
 		if (ADC_IS_SOFTWARE_START_REGULAR(hadc)
 				&& (hadc->Init.ContinuousConvMode == DISABLE)
 				&& (HAL_IS_BIT_CLR(hadc->Instance->SQR1, ADC_SQR1_L)
@@ -77,7 +79,7 @@ void ADC_MultiModeDMAConvCplt(DMA_HandleTypeDef *hdma) {
 			if (HAL_IS_BIT_CLR(hadc->State, HAL_ADC_STATE_INJ_BUSY)) {
 				SET_BIT(hadc->State, HAL_ADC_STATE_READY);
 			}
-		}
+	}
 
 		/* Conversion complete callback */
 		HAL_ADC_ConvCpltCallback(hadc);
@@ -101,7 +103,7 @@ void ADC_MultiModeDMAHalfConvCplt(DMA_HandleTypeDef *hdma) {
 //HAL_ADCEx_MultiModeStop_DMA(hadc);		// freeze
 //HAL_ADC_Stop(&hadc1);
 //HAL_DMA_Abort(&hadc1);
-
+//DMA2->HIFCR |= (uint32_t)0x0000001F;
 //	myhalfcomplete++;
 	HAL_ADC_ConvHalfCpltCallback(hadc);
 }
@@ -118,6 +120,7 @@ void ADC_MultiModeDMAError(DMA_HandleTypeDef *hdma) {
 	hadc->State = HAL_ADC_STATE_ERROR_DMA;
 	/* Set ADC error code to DMA error */
 	hadc->ErrorCode |= HAL_ADC_ERROR_DMA;
+
 	printf("Multi-mode DMA Error\n");
 	HAL_ADC_ErrorCallback(hadc);
 }
@@ -189,13 +192,12 @@ HAL_StatusTypeDef HAL_ADCEx_MultiModeStart_DBDMA(ADC_HandleTypeDef* hadc,
 		__HAL_UNLOCK(hadc);
 
 		/* Set the DMA transfer complete callback */
-		hadc->DMA_Handle->XferCpltCallback = ADC_MultiModeDMAConvCplt;
-
+		hadc->DMA_Handle->XferCpltCallback = ADC_MultiModeDMAConvM0Cplt;
+		hadc->DMA_Handle->XferM1CpltCallback = ADC_MultiModeDMAConvM1Cplt;
 
 		/* Set the DMA half transfer complete callback */
-
-		hadc->DMA_Handle->XferHalfCpltCallback = ADC_MultiModeDMAHalfConvCplt;
-//		hadc->DMA_Handle->XferHalfCpltCallback = NULL;
+		hadc->DMA_Handle->XferM1HalfCpltCallback = NULL;
+		hadc->DMA_Handle->XferHalfCpltCallback = NULL;
 
 		/* Set the DMA error callback */
 		hadc->DMA_Handle->XferErrorCallback = ADC_MultiModeDMAError;
@@ -260,19 +262,32 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)	// adc conversion done
 	(*buf)[3] = avg / ((UDPBUFSIZE / 2) - 8);
 
 	myfullcomplete++;
-//HAL_ADC_Stop(&hadc1);
-//HAL_DMA_Abort(&hadc1);
+//	HAL_ADCEx_MultiModeStop_DMA(hadc);		// freeze
+//	HAL_ADC_Stop(&hadc1);
+//	HAL_DMA_Abort(&hadc1);
 }
 #endif
 
-
+#if 0
 void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DMA half complete)
 {
-	while ((DMA2_Stream4->CR & (1<<19)) == 1)		// still doing buffer
-		;		// wait
+	volatile uint32_t sr;
+
+	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_1);
+
+	sr = DMA2_Stream4->CR & (1<<19);
+//	while (DMA2_Stream4->CR & (1<<19) == sr)		// still doing buffer
+//		;		// wait
+//	while ((DMA2_Stream4->CR & (1<<19)) == 1)		// still doing buffer
+//	while ((DMA2_Stream4->CR & (1<<19)) == 0) // (1<<19))		// still doing buffer
+
+
 	myhalfcomplete = 1;		// second buffer has completed
-	HAL_ADC_ConvCpltCallback(hadc); 	// then process
+
+//	HAL_ADC_ConvCpltCallback(hadc); 	// then process
 }
+#endif
+
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DMA complete)
 {
@@ -289,44 +304,26 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	uint32_t peakcount = 0;			// number of peaks
 	uint8_t goingup = 0; // slope
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	volatile static uint32_t stamp[16] = {0,0,0,0,0,0,0,0};
+//	volatile static uint32_t stamp[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 	timestamp = TIM2->CNT;			// real time
-	stamp[(adcseq & 0xf)] = timestamp;
+//	stamp[adcseq & 0xf] = timestamp;
 
-//	HAL_ADCEx_MultiModeStop_DMA(hadc);		// freeze
-//	HAL_ADC_Stop(&hadc1);
-//	HAL_DMA_Abort(&hadc1);
+//	 HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_9);
 
-	HAL_GPIO_TogglePin(GPIOB, LD2_Pin);	// blue led
-
-	if ((myhalfcomplete & 1) == 1) {		// second buffer is ready
-		myhalfcomplete = 0;
-		myfullcomplete = 0;
-//		buf = pktbuf;
+	if (dmabufno == 1) {		// second buffer is ready
 		buf = &((*pktbuf)[UDPBUFSIZE / 4]);
 	}
 	else {
 		buf = pktbuf;
-//		buf = &((*pktbuf)[UDPBUFSIZE / 4]);
 	}
 
-
-#if 0
-	if ((myfullcomplete & 1) == 0) {	// select the correct buffer of the two
-		buf = pktbuf;
-	} else {
-		buf = &((*pktbuf)[UDPBUFSIZE / 4]);
-	}
-#endif
 	adcbuf16 = &((uint16_t *) *buf)[8];
-	myfullcomplete++;
-
 
 //	(*buf)[0] = UDP seq and packet flags	// set in udpstream.c
 	(*buf)[1] = (adcseq++) | ((statuspkt.uid & 0x3ffff) << 8)
 			| (rtseconds << 26);	// ADC completed packet counter (24 bits)
-//	(*buf)[2] = 1pps capture cnt;		// 1pps counter capture  (set by DMA - copied below)
+//	(*buf)[2] = // adc batch id + 24 bits spare
 	(*buf)[2] = adcbatchid;		// 8 bits of 32 used
 	(*buf)[3] = timestamp;
 
@@ -337,11 +334,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 
 	for (i = 0; i < (ADCBUFSIZE / 2); i++) {		// scan the buffer content
 
-//		 for i from 1 to n								// high pass filter
-//		     y[i] := a * (y[i-1] + x[i] - x[i-1])
-
-		if ((*adcbuf16)[i]
-				> ((statuspkt.adctrigoff + statuspkt.adcbase) & 0x3fff)) { // triggered
+		if ((*adcbuf16)[i] > ((statuspkt.adctrigoff + statuspkt.adcbase) & 0x3fff)) { // triggered
 			sigsend = 1;
 		}
 
@@ -366,6 +359,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	} // end for
 
 	if (sigsend) {
+		HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_SET);	// blue led
 		if (sigprev == 0)		// no previous detection last time
 			adcbatchid++;		// start a new adc batch number
 		ledhang = 1000;
@@ -373,6 +367,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 		sigprev = 1;	// remember this trigger for next packet
 	} else {
 		sigprev = 0;		// no detection
+		HAL_GPIO_WritePin(GPIOB,LD2_Pin,GPIO_PIN_RESET);	// blue led
 	}
 
 #if 1
@@ -392,8 +387,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 
 	if (statuspkt.adctrigoff > 4095)
 		statuspkt.adctrigoff = 4095;
-
-//	HAL_GPIO_TogglePin(GPIOB, LD3_Pin);		// Red LED
 
 	samplecnt++;
 	noisecnt++;
@@ -429,6 +422,19 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 		 use and may be called portEND_SWITCHING_ISR(). */
 		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 	}
+}
+
+
+void ADC_MultiModeDMAConvM0Cplt(ADC_HandleTypeDef* hadc)
+{
+	dmabufno = 0;
+	HAL_ADC_ConvCpltCallback(hadc);
+}
+
+void ADC_MultiModeDMAConvM1Cplt(ADC_HandleTypeDef* hadc)
+{
+	dmabufno = 1;
+	HAL_ADC_ConvCpltCallback(hadc);
 }
 
 

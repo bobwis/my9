@@ -151,10 +151,6 @@ void startudp() {
 
 		//    memcpy (p1->payload, (lastbuf == 0) ? testbuf : testbuf, ADCBUFLEN);
 
-#if 0
-		while (myfullcomplete == lastsent) // last adc buffer == last sent buffer
-		osDelay(0);//		vTaskDelay(0);						// wait for adc finished
-#endif
 
 		/* Wait to be notified */
 		ulNotificationValue = ulTaskNotifyTake( pdTRUE, xMaxBlockTime);
@@ -166,7 +162,6 @@ void startudp() {
 			printf("ulNotificationValue = %d\n",ulNotificationValue );
 		}
 #endif
-		lastsent = myfullcomplete;
 
 		if (adcbatchid != lastadcbatchid) {
 			// we need to append/send an end of seq status packet
@@ -199,7 +194,7 @@ void startudp() {
 
 //			HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_SET);	// blue led on
 
-			p = (lastsent & 1) ? p2 : p1;	// which dma buffer to send
+			p = (dmabufno) ? p2 : p1;	// which dma buffer to send, dmabuf is last filled buffer, 0 or 1
 
 			((uint8_t *) (p->payload))[3] = 0;	// pkt type
 

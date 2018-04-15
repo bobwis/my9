@@ -214,12 +214,12 @@ HAL_StatusTypeDef HAL_DMAEx_MultiBufferStart_IT(DMA_HandleTypeDef *hdma, uint32_
     /* Enable Common interrupts*/
     hdma->Instance->CR  |= DMA_IT_TC | DMA_IT_TE | DMA_IT_DME;
     hdma->Instance->FCR |= DMA_IT_FE;
-    
+#if 1
     if((hdma->XferHalfCpltCallback != NULL) || (hdma->XferM1HalfCpltCallback != NULL))
     {
       hdma->Instance->CR  |= DMA_IT_HT;
     }
-    
+#endif
     /* Enable the peripheral */
     __HAL_DMA_ENABLE(hdma); 
   }

@@ -35,10 +35,12 @@ void ADC_MultiModeDMAConvCplt(DMA_HandleTypeDef *hdma);
 void ADC_MultiModeDMAError(DMA_HandleTypeDef *hdma);
 void ADC_MultiModeDMAHalfConvCplt(DMA_HandleTypeDef *hdma);
 
+void ADC_MultiModeDMAConvM0Cplt(ADC_HandleTypeDef* hadc);
+void ADC_MultiModeDMAConvM1Cplt(ADC_HandleTypeDef* hadc);
+
 void startadc(void);
 
-extern unsigned int myfullcomplete;
-extern unsigned int myhalfcomplete;
+extern unsigned int dmabufno;
 
 extern unsigned int sigprev;		// number of streams let after adc thresh exceeded
 extern unsigned int sigsend;	// flag to tell udp to send sample packet
