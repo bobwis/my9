@@ -1090,7 +1090,7 @@ void StartDefaultTask(void const * argument)
 		HAL_StatusTypeDef err;
 		struct dhcp *dhcp;
 		int i, dhcpok = 0;
-		uint16_t dacdata[64];
+//		uint16_t dacdata[64];
 
 		netif = netif_default;
 		netif_set_link_callback(netif, netif_link_callbk_fn);
@@ -1108,7 +1108,7 @@ void StartDefaultTask(void const * argument)
 
 		statuspkt.adcpktssent = 0;
 
-		statuspkt.adctrigoff = TRIG_THRES;			// not dynamic (yet)
+		statuspkt.adctrigoff = TRIG_THRES;
 
 		osDelay(100);
 
@@ -1130,8 +1130,8 @@ void StartDefaultTask(void const * argument)
 		//HAL_TIM_IC_Init and HAL_TIM_IC_ConfigChannel
 		//  (++) Input Capture :  HAL_TIM_IC_Start(), HAL_TIM_IC_Start_DMA(), HAL_TIM_IC_Start_IT()
 
-		if (err = (HAL_TIM_IC_Start_DMA(&htim2, TIM_CHANNEL_3, t2cap,// capture on PB10 input
-				(sizeof(t2cap) / 4))) != HAL_OK) {
+		// capture on PB10 input
+		if ((err = HAL_TIM_IC_Start_DMA(&htim2, TIM_CHANNEL_3, t2cap,(sizeof(t2cap) / 4))) != HAL_OK) {
 			printf("TIM_Base_Start_DMA err %i", err);
 			_Error_Handler(__FILE__, __LINE__);
 		}
@@ -1179,21 +1179,28 @@ void StartDefaultTask(void const * argument)
 void StarLPTask(void const * argument)
 {
   /* USER CODE BEGIN StarLPTask */
-	uint32_t timestamp1, timestamp2;
-	/* Infinite loop */
+static uint32_t trigs = 0;
+
+
 //	http_server_netconn_init();
 
-	osDelay(50000);
+	osDelay(1000);
 	statuspkt.adcudpover = 0;		// debug use count overruns
 	statuspkt.trigcount = 0;		// debug use adc trigger count
 	statuspkt.udpsent = 0;	// debug use adc udp sample packet sent count
 
 	for (;;) {
-		osDelay(10000);
-		timestamp1 = TIM2->CNT;
-		osDelay(1);
-		timestamp2 = TIM2->CNT;
-//		printf("TIM2=%u TIM2=%u\n", timestamp1, timestamp2);
+		osDelay(2000);
+		if (statuspkt.trigcount > (3600 + trigs))	// spamming: 3600 packets sent in 2.5Sec (out of approx 7.2K packets)
+		{
+			jabber = 1;		// 5 seconds pause
+			statuspkt.jabcnt++;
+		}
+		else {
+			if (jabber)
+				jabber--;		// de-arm count
+		}
+		trigs = statuspkt.trigcount;
 	}
   /* USER CODE END StarLPTask */
 }
@@ -1218,7 +1225,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
 	if (htim->Instance == TIM2) {
-		printf("T2P PeriodElapsedCallback %l %u\n", t2cap[0],
+		printf("T2P PeriodElapsedCallback %lu %lu\n", t2cap[0],
 				statuspkt.clktrim);
 		return;
 	}

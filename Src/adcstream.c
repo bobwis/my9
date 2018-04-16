@@ -27,6 +27,7 @@ unsigned int sigsend = 0;	// flag to tell udp to send sample packet
 uint32_t globaladcavg = 0;		// adc average over milli-secs
 uint32_t globaladcnoise = 0;	// adc noise peaks average over milli-secs
 uint8_t adcbatchid = 0;	// adc sequence number of a batch of 1..n consecutive triggered buffers
+int jabber = 0;			// timeout for spamming trigger
 
 /* Stores the handle of the task that will be notified when the
  transmission is complete. */
@@ -323,8 +324,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 //	(*buf)[0] = UDP seq and packet flags	// set in udpstream.c
 	(*buf)[1] = (adcseq++) | ((statuspkt.uid & 0x3ffff) << 8)
 			| (rtseconds << 26);	// ADC completed packet counter (24 bits)
-//	(*buf)[2] = // adc batch id + 24 bits spare
-	(*buf)[2] = adcbatchid;		// 8 bits of 32 used
+	(*buf)[2] = adcbatchid;		// adc batch id + 24 bits spare
 	(*buf)[3] = timestamp;
 
 	if (sigsend) {		// oops overrun
@@ -363,7 +363,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 		if (sigprev == 0)		// no previous detection last time
 			adcbatchid++;		// start a new adc batch number
 		ledhang = 1000;
-		statuspkt.trigcount++;	// debug no of triggered packets detected
+		statuspkt.trigcount++;	//  no of triggered packets detected
 		sigprev = 1;	// remember this trigger for next packet
 	} else {
 		sigprev = 0;		// no detection

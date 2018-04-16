@@ -74,15 +74,15 @@ struct statpkt {
 		uint8_t majorversion;	// major version of STM32 detector
 		uint8_t minorversion;	// minor version of STM32 detector
 		uint16_t adcnoise;		// adc average peak noise
-		uint32_t auxstatus1;	// spare 24 bits and adcbatchid 8 bits
+		uint32_t auxstatus1;	// spare 16 bits, jabbering 8 bits, adcbatchid 8 bits
 		uint32_t adcudpover;	// adc -> udp send overruns
 		uint32_t trigcount;		// adc trigger count
 		uint32_t udpsent;		// udp sample packets sent
 		uint16_t peaklevel;		// peak trig level
-		uint16_t spare1;
+		uint16_t jabcnt;		// jabber counter
 		uint32_t telltale1;		// end of packet marker
 
-} statuspkt; __attribute__((aligned(4),packed)) CHALLENGE;
+} volatile statuspkt; __attribute__((aligned(4),packed)) CHALLENGE;
 
 // set up the newo7 as we want it
 extern void setupneo(void);
