@@ -1191,9 +1191,9 @@ static uint32_t trigs = 0;
 
 	for (;;) {
 		osDelay(2000);
-		if (statuspkt.trigcount > (3600 + trigs))	// spamming: 3600 packets sent in 2.5Sec (out of approx 7.2K packets)
+		if (statuspkt.trigcount > (3600 + trigs))	// spamming: 3600 packets sent in 2 Sec (out of approx 7.2K packets)
 		{
-			jabber = 1;		// 5 seconds pause
+			jabber = 1;		// 2 seconds pause
 			statuspkt.jabcnt++;
 		}
 		else {
