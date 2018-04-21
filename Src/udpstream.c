@@ -206,8 +206,8 @@ void startudp() {
 #endif
 		/* send end of sequence status packet if endseq */
 		if ((adcbatchid != lastadcbatchid) && (jabber == 0)) {
-			lastadcbatchid = adcbatchid;
 			sendstatus(ENDSEQ, ps, pcb, lastadcbatchid); // send end of seq status
+			lastadcbatchid = adcbatchid;
 			statuspkt.adcpktssent = 0;	// end of seqence so start again at 0
 		}
 
