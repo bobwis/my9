@@ -38,7 +38,7 @@ void dnsfound(const char *name, const ip_addr_t *ipaddr, void *callback_arg) {
 //
 // send timed status packet if is time
 //
-inline void sendtimedstatus(struct pbuf *ps, struct udp_pcb *pcb,uint8_t lastadcbatchid) {
+void sendtimedstatus(struct pbuf *ps, struct udp_pcb *pcb,uint8_t lastadcbatchid) {
 static uint32_t talive = 0;
 
 #ifdef TESTING
@@ -237,7 +237,7 @@ void startudp() {
 				}
 
 				statuspkt.adcpktssent++;	// UDP sample packet counterr
-				statuspkt.udpcount++;		/ UDP packet number
+				statuspkt.udpcount++;		// UDP packet number
 				while (ps->ref != 1) {  // old packet not finished with yet
 					printf("******* end sample status: ps->ref = %d *******\n",
 							ps->ref);
