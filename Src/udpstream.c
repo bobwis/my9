@@ -237,6 +237,7 @@ void startudp() {
 				}
 
 				statuspkt.adcpktssent++;	// UDP sample packet counterr
+				statuspkt.udpcount++;		/ UDP packet number
 				while (ps->ref != 1) {  // old packet not finished with yet
 					printf("******* end sample status: ps->ref = %d *******\n",
 							ps->ref);
