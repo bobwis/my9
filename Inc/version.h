@@ -9,11 +9,11 @@
 #define VERSION_H_
 
 #define MAJORVERSION 0
-#define MINORVERSION 2
+#define MINORVERSION 4
 
 
 // TESTING Speeds up the frequency of status packets
-#if		0
+#if		1
 #define TESTING
 #endif
 

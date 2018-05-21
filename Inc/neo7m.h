@@ -80,6 +80,9 @@ struct statpkt {
 		uint32_t udpsent;		// udp sample packets sent
 		uint16_t peaklevel;		// peak trig level
 		uint16_t jabcnt;		// jabber counter
+		uint32_t noisevar;		// noise variance
+		uint32_t reserved1;
+		uint32_t reserved2;
 		uint32_t telltale1;		// end of packet marker
 
 } volatile statuspkt; __attribute__((aligned(4),packed)) CHALLENGE;

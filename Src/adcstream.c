@@ -5,6 +5,8 @@
  *      Author: bob
  */
 
+#include <stdlib.h>
+#include <math.h>
 #include "stm32f7xx_hal.h"
 #include "adcstream.h"
 #include "mydebug.h"
@@ -23,7 +25,7 @@ uint32_t t2cap[1];  // dma writes t2 capture value on 1pps edge
 unsigned int dmabufno = 0;	// the last filled buffer 0 or 1
 
 unsigned int sigprev = 0;	// number of streams let after adc thresh exceeded
-unsigned int sigsend = 0;	// flag to tell udp to send sample packet
+volatile unsigned int sigsend = 0;	// flag to tell udp to send sample packet
 uint32_t globaladcavg = 0;		// adc average over milli-secs
 uint32_t globaladcnoise = 0;	// adc noise peaks average over milli-secs
 uint8_t adcbatchid = 0;	// adc sequence number of a batch of 1..n consecutive triggered buffers
@@ -38,9 +40,6 @@ uint8_t gpslocked = 0;			// state of the GPS locked
 uint8_t netup = 0;				// state of LAN up / down
 uint8_t rtseconds = 0;			// real time seconds
 
-
-
-
 /**
  * @brief  DMA transfer complete callback.
  * @param  hdma: pointer to a DMA_HandleTypeDef structure that contains
@@ -53,7 +52,8 @@ void ADC_MultiModeDMAConvCplt(DMA_HandleTypeDef *hdma) {
 			(ADC_HandleTypeDef*) ((DMA_HandleTypeDef*) hdma)->Parent;
 //DMA2->HIFCR |= (uint32_t)0x0000001F;
 	/* Update state machine on conversion status if not in error state */
-	if (HAL_IS_BIT_CLR(hadc->State,HAL_ADC_STATE_ERROR_INTERNAL | HAL_ADC_STATE_ERROR_DMA)) {
+	if (HAL_IS_BIT_CLR(hadc->State,
+			HAL_ADC_STATE_ERROR_INTERNAL | HAL_ADC_STATE_ERROR_DMA)) {
 		/* Update ADC state machine */
 		SET_BIT(hadc->State, HAL_ADC_STATE_REG_EOC);
 
@@ -80,7 +80,7 @@ void ADC_MultiModeDMAConvCplt(DMA_HandleTypeDef *hdma) {
 			if (HAL_IS_BIT_CLR(hadc->State, HAL_ADC_STATE_INJ_BUSY)) {
 				SET_BIT(hadc->State, HAL_ADC_STATE_READY);
 			}
-	}
+		}
 
 		/* Conversion complete callback */
 		HAL_ADC_ConvCpltCallback(hadc);
@@ -282,40 +282,41 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done
 //	while ((DMA2_Stream4->CR & (1<<19)) == 1)		// still doing buffer
 //	while ((DMA2_Stream4->CR & (1<<19)) == 0) // (1<<19))		// still doing buffer
 
-
-	myhalfcomplete = 1;		// second buffer has completed
+	myhalfcomplete = 1;// second buffer has completed
 
 //	HAL_ADC_ConvCpltCallback(hadc); 	// then process
 }
 #endif
 
-
+#define WINSIZE 256
+#define WINSHIFT 8
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DMA complete)
 {
-	register uint32_t timestamp, i;
-	volatile adcbuffer *buf;
+	register uint32_t timestamp;
+	register int32_t i;
+	register uint8_t j;
+	adcbuffer *buf;
 	adc16buffer *adcbuf16;
-	uint32_t adcbgbase = 0;		// avg adc level per buffer
-	static uint32_t samplecnt = 0, noisecnt = 0, avg = 0, noise = 0;
+	static uint32_t adcbgbaseacc = 0;		// avg adc level per buffer
+	static uint32_t samplecnt = 0;
 	static uint32_t ledhang = 0;
-	static uint32_t avghi = 0;		// avg of all the peaks
-	static uint16_t lastsam = 0;	// about half adc res
 	static uint8_t adcseq = 0;		// adc sequence number
-	uint32_t peaks = 0;				// sum of all peaks
-	uint32_t peakcount = 0;			// number of peaks
-	uint8_t goingup = 0; // slope
+	int32_t thiswindiff = 0;
+	uint16_t thissamp = 0;
+	static int32_t windiff[WINSIZE] = { 0 };// past window differences from the window mean
+	static uint16_t lastsamp[WINSIZE] = { 0 };// last sample saved to calc global mean
+	static int16_t winmean = 0;	// sliding window mean
+	static int16_t meanwindiff = 0;	// sliding mean of window differences
+	static int32_t wdacc = 0;	// window difference accumulator
+	static int32_t wmeanacc = 0;	// window mean accumulator
+	volatile static uint16_t lastmeanwindiff = 0;
+
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-//	volatile static uint32_t stamp[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
 	timestamp = TIM2->CNT;			// real time
-//	stamp[adcseq & 0xf] = timestamp;
-
-//	 HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_9);
 
 	if (dmabufno == 1) {		// second buffer is ready
-		buf = &((*pktbuf)[UDPBUFSIZE / 4]);
-	}
-	else {
+		buf = &((*pktbuf)[(UDPBUFSIZE / 4)]);
+	} else {
 		buf = pktbuf;
 	}
 
@@ -333,30 +334,28 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	}
 
 	for (i = 0; i < (ADCBUFSIZE / 2); i++) {		// scan the buffer content
+		j = i & (WINSIZE - 1);
+		thissamp = (*adcbuf16)[i];
 
-		if ((*adcbuf16)[i] > ((statuspkt.adctrigoff + statuspkt.adcbase) & 0x3fff)) { // triggered
-			sigsend = 1;
+		adcbgbaseacc += thissamp; // accumulator used to find avg level of signal over long time (for base)
+
+		wmeanacc = wmeanacc + thissamp - lastsamp[j];		// window mean acc
+		winmean = wmeanacc >> (WINSHIFT);// divide to find the new window mean
+		lastsamp[j] = thissamp;			// save last samples
+
+//		thiswindiff = abs(thissamp - winmean);// find difference from window mean
+		thiswindiff = abs(thissamp - winmean);// find difference from window mean
+		wdacc = wdacc - windiff[j] + thiswindiff; // difference accumulator for WINSIZE samples
+
+		lastmeanwindiff = meanwindiff;
+
+		meanwindiff = wdacc >> (WINSHIFT);// sliding mean of window differences
+		windiff[j] = meanwindiff;	// store latest window mean of differences
+
+		if (abs(meanwindiff) > (abs(lastmeanwindiff)+1))  {  // if new mean diff > last mean diff +1
+			sigsend = 1;	// trigger if 1.5 times greater than running mean
 		}
-
-		adcbgbase += (*adcbuf16)[i]; // accumulator used to find avg level of signal
-
-		if ((*adcbuf16)[i] > statuspkt.adcbase) { // only interested above base level
-			if (lastsam < (*adcbuf16)[i]) {	// going up
-				goingup = 1;
-			} else	// lastsam is same or larger than this sample
-			{
-				if (lastsam > (*adcbuf16)[i]) { 		// going down from peak
-					if ((lastsam > statuspkt.adcbase) && (goingup)) { // we are above base and were going up before
-						peaks += lastsam;
-						peakcount++;
-					}
-					goingup = 0;
-				}
-			}
-		} else
-			goingup = 0;
-		lastsam = (*adcbuf16)[i];
-	} // end for
+	} // end for i
 
 	if (sigsend) {
 		HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_SET);	// blue led
@@ -367,18 +366,17 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 		sigprev = 1;	// remember this trigger for next packet
 	} else {
 		sigprev = 0;		// no detection
-		HAL_GPIO_WritePin(GPIOB,LD2_Pin,GPIO_PIN_RESET);	// blue led
+		HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_RESET);	// blue led
 	}
 
-#if 1
 	if (ledhang) {		// this could be moved to the low priority process
 		ledhang--;
-		HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_SET);	 // red led on
+		HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_SET);		// red led on
 	} else {
 		HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_RESET);	 // red led off
 	}
-#endif
 
+	globaladcnoise = meanwindiff;
 	if (globaladcnoise == 0)
 		globaladcnoise = statuspkt.adcbase;		// dont allow zero peaks
 
@@ -389,25 +387,13 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 		statuspkt.adctrigoff = 4095;
 
 	samplecnt++;
-	noisecnt++;
 
-	avg += adcbgbase / (ADCBUFSIZE / 2);
-	if (samplecnt == 2048) {			// 2k adc bufffers sampled approx 0.5 sec
-		globaladcavg = avg >> 11;
-		adcbgbase = 0;
-		avg = 0;
+	if (samplecnt == 2048) {		// 2k adc bufffers sampled approx 0.5 sec
+		globaladcavg = adcbgbaseacc / (ADCBUFSIZE / 2) >> 11;
+		adcbgbaseacc = 0;
 		samplecnt = 0;
 	}
 
-	if (peakcount) {
-		peaks /= peakcount;	// average amplitude of peaks (noise) in this buffer
-		noise += peaks;		// accumulator of avg noise buffer
-	}
-	if (noisecnt == 256) {				// enough buffers sampled (approx 70mS)
-		globaladcnoise = noise >> 8;
-		noise = 0;
-		noisecnt = 0;
-	}
 	statuspkt.adcnoise = (globaladcnoise & 0xfff);	// agc
 	statuspkt.adcbase = (globaladcavg & 0xfff);	// agc
 
@@ -424,19 +410,15 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	}
 }
 
-
-void ADC_MultiModeDMAConvM0Cplt(ADC_HandleTypeDef* hadc)
-{
+void ADC_MultiModeDMAConvM0Cplt(ADC_HandleTypeDef* hadc) {
 	dmabufno = 0;
 	HAL_ADC_ConvCpltCallback(hadc);
 }
 
-void ADC_MultiModeDMAConvM1Cplt(ADC_HandleTypeDef* hadc)
-{
+void ADC_MultiModeDMAConvM1Cplt(ADC_HandleTypeDef* hadc) {
 	dmabufno = 1;
 	HAL_ADC_ConvCpltCallback(hadc);
 }
-
 
 void startadc() {
 	int i, lastbuf = 0;
@@ -474,7 +456,8 @@ void startadc() {
 	adcbuf2 =
 			&(*pktbuf)[(ADCBUFHEAD / 4) + (ADCBUFSIZE / 4) + (ADCBUFHEAD / 4)];	// leave room in start of 2nd buffer
 
-	adcstat = HAL_ADCEx_MultiModeStart_DBDMA(&hadc1, adcbuf1, adcbuf2, (ADCBUFSIZE/2));		// len in 16bit words
+	adcstat = HAL_ADCEx_MultiModeStart_DBDMA(&hadc1, adcbuf1, adcbuf2,
+			(ADCBUFSIZE / 2));		// len in 16bit words
 
 //	adcstat = HAL_ADCEx_MultiModeStart_DBDMA(&hadc1, adcbufdum1, adcbufdum2, (ADCBUFSIZE / 4));		// DEBUG
 	printf("ADC_MM_Start returned %u\r\n", adcstat);

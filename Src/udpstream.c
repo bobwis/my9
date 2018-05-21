@@ -38,7 +38,7 @@ void dnsfound(const char *name, const ip_addr_t *ipaddr, void *callback_arg) {
 //
 // send timed status packet if is time
 //
-inline void sendtimedstatus(struct pbuf *ps, struct udp_pcb *pcb,uint8_t lastadcbatchid) {
+void sendtimedstatus(struct pbuf *ps, struct udp_pcb *pcb,uint8_t lastadcbatchid) {
 static uint32_t talive = 0;
 
 #ifdef TESTING
@@ -206,8 +206,8 @@ void startudp() {
 #endif
 		/* send end of sequence status packet if endseq */
 		if ((adcbatchid != lastadcbatchid) && (jabber == 0)) {
-			lastadcbatchid = adcbatchid;
 			sendstatus(ENDSEQ, ps, pcb, lastadcbatchid); // send end of seq status
+			lastadcbatchid = adcbatchid;
 			statuspkt.adcpktssent = 0;	// end of seqence so start again at 0
 		}
 
