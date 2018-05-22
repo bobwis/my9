@@ -36,7 +36,6 @@ int jabber = 0;			// timeout for spamming trigger
 volatile TaskHandle_t xTaskToNotify = NULL;
 
 // the two vars below should be moved to more appropriate file
-uint8_t gpslocked = 0;			// state of the GPS locked
 uint8_t netup = 0;				// state of LAN up / down
 uint8_t rtseconds = 0;			// real time seconds
 
@@ -300,7 +299,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	static uint32_t adcbgbaseacc = 0;		// avg adc level per buffer
 	static uint32_t samplecnt = 0;
 	static uint32_t ledhang = 0;
-	static uint8_t adcseq = 0;		// adc sequence number
+	static uint8_t adcbufnum = 0;		// adc sequence number
 	int32_t thiswindiff = 0;
 	uint16_t thissamp = 0;
 	static int32_t windiff[WINSIZE] = { 0 };// past window differences from the window mean
@@ -323,9 +322,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	adcbuf16 = &((uint16_t *) *buf)[8];
 
 //	(*buf)[0] = UDP seq and packet flags	// set in udpstream.c
-	(*buf)[1] = (adcseq++) | ((statuspkt.uid & 0x3ffff) << 8)
-			| (rtseconds << 26);	// ADC completed packet counter (24 bits)
-	(*buf)[2] = adcbatchid;		// adc batch id + 24 bits spare
+	(*buf)[1] = (statuspkt.uid << 16) | (adcbatchid << 8)| (rtseconds << 2) | (adcbufnum++ & 3);	// ADC completed packet counter (24 bits)
+	(*buf)[2] = statuspkt.NavPvt.iTOW;
 	(*buf)[3] = timestamp;
 
 	if (sigsend) {		// oops overrun
@@ -343,7 +341,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 		winmean = wmeanacc >> (WINSHIFT);// divide to find the new window mean
 		lastsamp[j] = thissamp;			// save last samples
 
-//		thiswindiff = abs(thissamp - winmean);// find difference from window mean
 		thiswindiff = abs(thissamp - winmean);// find difference from window mean
 		wdacc = wdacc - windiff[j] + thiswindiff; // difference accumulator for WINSIZE samples
 
@@ -353,7 +350,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 		windiff[j] = meanwindiff;	// store latest window mean of differences
 
 		if (abs(meanwindiff) > (abs(lastmeanwindiff)+1))  {  // if new mean diff > last mean diff +1
-			sigsend = 1;	// trigger if 1.5 times greater than running mean
+			sigsend = 1;	// trigger greater than running mean
 		}
 	} // end for i
 
@@ -397,6 +394,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	statuspkt.adcnoise = (globaladcnoise & 0xfff);	// agc
 	statuspkt.adcbase = (globaladcavg & 0xfff);	// agc
 
+
 	if (xTaskToNotify == NULL) {
 		printf("Notify task null\n");
 	} else if (sigsend) {
@@ -422,9 +420,9 @@ void ADC_MultiModeDMAConvM1Cplt(ADC_HandleTypeDef* hadc) {
 
 void startadc() {
 	int i, lastbuf = 0;
-	uint16_t *adcbufdum1, *adcbufdum2;		// debug
+//	uint16_t *adcbufdum1, *adcbufdum2;		// debug
 //	adcbufdum1 = pvPortMalloc(UDPBUFSIZE);	//  dummy buffer
-	adcbufdum2 = pvPortMalloc(UDPBUFSIZE);	//  dummy buffer
+//	adcbufdum2 = pvPortMalloc(UDPBUFSIZE);	//  dummy buffer
 
 	statuspkt.clktrim = 107000000;
 	statuspkt.adcpktssent = 0;
@@ -438,7 +436,7 @@ void startadc() {
 		for (;;)
 			;
 	}
-	if ((uint32_t) pktbuf & 3 > 0) {
+	if (((uint32_t)pktbuf & 3) > 0) {
 		printf("******** pvPortMalloc not on word boundary *********\n");
 	}
 

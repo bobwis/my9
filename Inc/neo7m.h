@@ -23,6 +23,7 @@ h * neo7m.h
  * https://github.com/1oginov/UBX-GPS-Library
  */
 
+#define GPS_UTC_OFFSET 315964800		// GPS EPOCH to UTC UNIX EPOCH (not including leap seconds)
 
 //const unsigned char UBXGPS_HEADER[] = { 0xB5, 0x62 };
 
@@ -64,8 +65,8 @@ struct statpkt {
 		} NavPvt;
 
 		uint32_t clktrim;		// Nominal 108MHz clock is actually this frequency
-		uint32_t uid;			// only 18 bits used
-		uint32_t adcpktssent;	// Number of ADC pks sent in this trigger event
+		uint16_t uid;			// 16 bits used
+		uint16_t adcpktssent;	// Number of ADC pks sent in this trigger event
 		uint16_t adctrigoff;	// adc trigger threshold above noise
 		uint16_t adcbase;		// average background level seen by ADC
 		uint32_t sysuptime;		// number of seconds system up from boot uptime
@@ -86,6 +87,8 @@ struct statpkt {
 		uint32_t telltale1;		// end of packet marker
 
 } volatile statuspkt; __attribute__((aligned(4),packed)) CHALLENGE;
+
+extern uint8_t gpslocked;		// Gps locked flag;
 
 // set up the newo7 as we want it
 extern void setupneo(void);

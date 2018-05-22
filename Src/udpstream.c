@@ -15,6 +15,7 @@
 #include "lwip/prot/dns.h"
 
 extern uint32_t t1sec;
+uint8_t gpslocked = 0;
 
 void myudp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p,
 		struct ip_addr *addr, u16_t port) {
@@ -35,23 +36,6 @@ void dnsfound(const char *name, const ip_addr_t *ipaddr, void *callback_arg) {
 	ip_ready = 1;
 }
 
-//
-// send timed status packet if is time
-//
-void sendtimedstatus(struct pbuf *ps, struct udp_pcb *pcb,uint8_t lastadcbatchid) {
-static uint32_t talive = 0;
-
-#ifdef TESTING
-	if ((t1sec != talive)) { //} && (t1sec % 2 == 0)) { // this is a temporary mech to send timed status pkts...
-		talive = t1sec;
-
-#else
-		if ((t1sec != talive) && (t1sec % 120 == 0)) { // this is a temporary mech to send timed status pkts...
-			talive = t1sec;
-#endif
-		sendstatus(TIMED, ps, pcb, lastadcbatchid);
-	}
-}
 
 //
 // send a status packet
@@ -82,6 +66,25 @@ inline void sendstatus(int stype, struct pbuf *ps, struct udp_pcb *pcb,
 	statuspkt.udpcount++;
 
 }
+
+//
+// send timed status packet if is time
+//
+void sendtimedstatus(struct pbuf *ps, struct udp_pcb *pcb,uint8_t lastadcbatchid) {
+static uint32_t talive = 0;
+
+#ifdef TESTING
+	if ((t1sec != talive)) { //} && (t1sec % 2 == 0)) { // this is a temporary mech to send timed status pkts...
+		talive = t1sec;
+
+#else
+		if ((t1sec != talive) && (t1sec % 120 == 0)) { // this is a temporary mech to send timed status pkts...
+			talive = t1sec;
+#endif
+		sendstatus(TIMED, ps, pcb, lastadcbatchid);
+	}
+}
+
 
 void startudp() {
 	struct udp_pcb *pcb;
@@ -212,7 +215,9 @@ void startudp() {
 		}
 
 		/* if we have a trigger, send a sample packet */
-		if (sigsend) { // only send if adc threshold was exceeded
+		if ((sigsend) && (gpslocked)) { // only send if adc threshold was exceeded
+							// and GPS is locked
+
 
 			p = (dmabufno) ? p2 : p1; // which dma buffer to send, dmabuf is last filled buffer, 0 or 1
 

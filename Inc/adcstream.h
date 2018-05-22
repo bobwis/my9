@@ -47,7 +47,7 @@ volatile extern unsigned int sigsend;	// flag to tell udp to send sample packet
 
 extern uint32_t globaladcavg;		// adc global average level over 100-200msec
 extern uint32_t t2avg;				// cpu clock trim variable
-extern uint8_t gpslocked;			// state of the GPS locked
+
 extern uint8_t netup;				// state of LAN up / down
 extern uint16_t padding1;			// unused
 extern uint8_t rtseconds;			// real time seconds, synced to the gps 1pps pulse

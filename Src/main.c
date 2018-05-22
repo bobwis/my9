@@ -1097,7 +1097,7 @@ void StartDefaultTask(void const * argument)
 
 		t2cap[0] = 44444444;
 
-		statuspkt.uid = MY_UID;		// 18 bits
+		statuspkt.uid = MY_UID;		// 16 bits
 		statuspkt.majorversion = MAJORVERSION;
 		statuspkt.minorversion = MINORVERSION;
 		statuspkt.udpcount = 0;
