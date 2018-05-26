@@ -54,6 +54,52 @@ static struct /*UbxGps*/{
 } UbxGpsv = { .offsetClassProperties = 8, .offsetHeaders = 4,
 		.carriagePosition = 0, };
 
+// calculate days elapsed since 1 Jan this year
+uint32_t calcedays(int thisyear, int thismonth, int thisdom)
+{
+	volatile int i, j = 0, leap = 0;
+	uint8_t mnths[] = {31,28,31,30,31,30,31,31,30,31,30,31};
+
+	if ((thisyear % 100 == 0) && (thisyear % 400 == 0))		// its is leap year
+		leap = 1;
+	if ((thisyear % 4 == 0) && (thisyear % 100 != 0))		// its a leap year
+		leap = 1;
+
+	if (leap)
+		mnths[1] = 29;
+	else
+		mnths[1] = 28;	// just in case we have been running for four years continuously!
+
+	for (i=0; i<thismonth-1; i++)
+		j = j + mnths[i];			// find number of days since 1 jan this year to start of this month
+
+	j += thisdom-1;				// add in the days from this month
+
+	return(j);
+}
+
+
+// calculate epoch seconds from 1970 to now using GPS date time fields
+uint32_t calcepoch()
+{
+	uint32_t tm_sec, tm_min, tm_hour, tm_year, tm_yday;
+	volatile uint32_t result;
+
+	tm_sec = statuspkt.NavPvt.sec;
+	tm_min = statuspkt.NavPvt.min;
+	tm_hour = statuspkt.NavPvt.hour;
+	tm_year = statuspkt.NavPvt.year - 1900;
+
+	tm_yday = calcedays(statuspkt.NavPvt.year,statuspkt.NavPvt.month,statuspkt.NavPvt.day);
+
+	// calculate seconds between 1st Jan of both years
+	result = tm_sec + tm_min*60 + tm_hour*3600 + tm_yday*86400 +
+	     (tm_year-70)*31536000 + ((tm_year-69)/4)*86400 -
+	     ((tm_year-1)/100)*86400 + ((tm_year+299)/400)*86400;
+   return(result);
+}
+
+
 /**
  *Extracts from  UBX GPS Library
  * Created by Danila Loginov, July 2, 2016

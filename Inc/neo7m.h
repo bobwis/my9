@@ -82,6 +82,7 @@ struct statpkt {
 		uint16_t peaklevel;		// peak trig level
 		uint16_t jabcnt;		// jabber counter
 		uint32_t noisevar;		// noise variance
+		uint32_t epochsecs;
 		uint32_t reserved1;
 		uint32_t reserved2;
 		uint32_t telltale1;		// end of packet marker
@@ -89,12 +90,14 @@ struct statpkt {
 } volatile statuspkt; __attribute__((aligned(4),packed)) CHALLENGE;
 
 extern uint8_t gpslocked;		// Gps locked flag;
-
+extern uint8_t epochvalid;		// have we have worked out the epoch seconds?;
 // set up the newo7 as we want it
 extern void setupneo(void);
 
 // Update NavPvt
 extern void updategps(void);
+
+extern uint32_t calcepoch();
 
 #endif /* NEO7M_H_ */
 

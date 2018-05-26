@@ -16,6 +16,7 @@
 
 extern uint32_t t1sec;
 uint8_t gpslocked = 0;
+uint8_t epochvalid = 0;
 
 void myudp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p,
 		struct ip_addr *addr, u16_t port) {

@@ -1036,6 +1036,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {  // every second 1 pp
 
 	if (htim->Instance == TIM2) {
 		rtseconds = (statuspkt.NavPvt.sec + 1 ) % 60;		// assume we get here before serial comms updates gps seconds field
+		statuspkt.epochsecs++;
 //		neotime();
 #if 0		// clktrim with non-resetting pps counter
 		if (lastcap > t2cap[0]) {		// counter wrapped
@@ -1234,13 +1235,22 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 
 	if (htim->Instance == TIM6) {			// 1 second (internally timed, not compensated by GPS)
+//		printf("T6 PeriodElapsedCallback %u SR=%u\n", myfullcomplete, TIM6->SR);
 		t1sec++;
 		statuspkt.sysuptime++;
 		if (netup)
 			statuspkt.netuptime++;
-		if (gpslocked)
+		if (gpslocked) {
 			statuspkt.gpsuptime++;
-//		printf("T6 PeriodElapsedCallback %u SR=%u\n", myfullcomplete, TIM6->SR);
+			if (epochvalid == 0) {
+				statuspkt.epochsecs = calcepoch();
+				epochvalid = 1;
+			}
+		}
+		else {
+			statuspkt.gpsuptime = 0;
+			epochvalid = 0;
+		}
 		return;
 	}
 
