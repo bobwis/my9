@@ -10,7 +10,7 @@
 #include "stm32f7xx_hal.h"
 #include "adcstream.h"
 #include "mydebug.h"
-#include "freertos.h"
+#include "FreeRTOS.h"
 #include "task.h"
 #include "neo7m.h"
 
@@ -29,6 +29,7 @@ volatile unsigned int sigsend = 0;	// flag to tell udp to send sample packet
 uint32_t globaladcavg = 0;		// adc average over milli-secs
 uint32_t globaladcnoise = 0;	// adc noise peaks average over milli-secs
 uint8_t adcbatchid = 0;	// adc sequence number of a batch of 1..n consecutive triggered buffers
+uint8_t sendendstatus = 0; 	// flag to send end of capture status
 int jabber = 0;			// timeout for spamming trigger
 
 /* Stores the handle of the task that will be notified when the
@@ -322,7 +323,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	adcbuf16 = &((uint16_t *) *buf)[8];
 
 //	(*buf)[0] = UDP seq and packet flags	// set in udpstream.c
-	(*buf)[1] = (statuspkt.uid << 16) | (adcbatchid << 8)| (rtseconds << 2) | (adcbufnum++ & 3);	// ADC completed packet counter (24 bits)
+	(*buf)[1] = (statuspkt.uid << 16) | (adcbatchid << 8) | (rtseconds << 2)
+			| (adcbufnum++ & 3);	// ADC completed packet counter (24 bits)
 	(*buf)[2] = statuspkt.epochsecs; // statuspkt.NavPvt.iTOW;
 	(*buf)[3] = timestamp;
 
@@ -346,23 +348,27 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 
 		lastmeanwindiff = meanwindiff;
 
-		meanwindiff = wdacc >> (WINSHIFT);// sliding mean of window differences
+		meanwindiff = wdacc >> (WINSHIFT); // sliding mean of window differences
 		windiff[j] = meanwindiff;	// store latest window mean of differences
 
-		if (abs(meanwindiff) > (abs(lastmeanwindiff)+1))  {  // if new mean diff > last mean diff +1
+		if (abs(meanwindiff) > (abs(lastmeanwindiff) + 1)) { // if new mean diff > last mean diff +1
 			sigsend = 1;	// trigger greater than running mean
 		}
 	} // end for i
 
 	if (sigsend) {
 		HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_SET);	// blue led
-		if (sigprev == 0)		// no previous detection last time
+		if (sigprev == 0)		// no trigger last time, so this is a new event
 			adcbatchid++;		// start a new adc batch number
+		sigprev = 1;	// remember this trigger for next packet
 		ledhang = 1000;
 		statuspkt.trigcount++;	//  no of triggered packets detected
-		sigprev = 1;	// remember this trigger for next packet
-	} else {
-		sigprev = 0;		// no detection
+
+	} else {			// no trigger
+		if (sigprev) {		// but there was a trigger the last packet
+			sendendstatus = 1;	// so tell udpstream to send the end of sequence status packet
+		}
+		sigprev = 0;
 		HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_RESET);	// blue led
 	}
 
@@ -393,7 +399,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 
 	statuspkt.adcnoise = (globaladcnoise & 0xfff);	// agc
 	statuspkt.adcbase = (globaladcavg & 0xfff);	// agc
-
 
 	if (xTaskToNotify == NULL) {
 		printf("Notify task null\n");
@@ -436,7 +441,7 @@ void startadc() {
 		for (;;)
 			;
 	}
-	if (((uint32_t)pktbuf & 3) > 0) {
+	if (((uint32_t) pktbuf & 3) > 0) {
 		printf("******** pvPortMalloc not on word boundary *********\n");
 	}
 

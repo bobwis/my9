@@ -8,7 +8,7 @@
 #include "udpstream.h"
 #include "adcstream.h"
 #include "mydebug.h"
-#include "freertos.h"
+#include "FreeRTOS.h"
 #include "neo7m.h"
 #include "ip_addr.h"
 #include "lwip/dns.h"
@@ -42,11 +42,11 @@ void dnsfound(const char *name, const ip_addr_t *ipaddr, void *callback_arg) {
 // send a status packet
 //
 inline void sendstatus(int stype, struct pbuf *ps, struct udp_pcb *pcb,
-		uint8_t lastadcbatchid) {
+		uint8_t batchid) {
 
 	volatile err_t err;
 
-	statuspkt.auxstatus1 = (statuspkt.auxstatus1 & 0xffff0000) | (((jabber & 0xff) << 8) | lastadcbatchid);
+	statuspkt.auxstatus1 = (statuspkt.auxstatus1 & 0xffff0000) | (((jabber & 0xff) << 8) | batchid);
 
 	while (ps->ref != 1) { // old packet not finished with yet
 		printf("******* timed status1: ps->ref = %d *******\n", ps->ref);
@@ -65,13 +65,12 @@ inline void sendstatus(int stype, struct pbuf *ps, struct udp_pcb *pcb,
 		vTaskDelay(0); // but we need wait to update the data packet next, so wait
 	}
 	statuspkt.udpcount++;
-
 }
 
 //
 // send timed status packet if is time
 //
-void sendtimedstatus(struct pbuf *ps, struct udp_pcb *pcb,uint8_t lastadcbatchid) {
+void sendtimedstatus(struct pbuf *ps, struct udp_pcb *pcb, uint8_t batchid) {
 static uint32_t talive = 0;
 
 #ifdef TESTING
@@ -82,7 +81,7 @@ static uint32_t talive = 0;
 		if ((t1sec != talive) && (t1sec % 120 == 0)) { // this is a temporary mech to send timed status pkts...
 			talive = t1sec;
 #endif
-		sendstatus(TIMED, ps, pcb, lastadcbatchid);
+		sendstatus(TIMED, ps, pcb, batchid);
 	}
 }
 
@@ -208,11 +207,12 @@ void startudp() {
 			printf("ulNotificationValue = %d\n",ulNotificationValue );
 		}
 #endif
-		/* send end of sequence status packet if endseq */
-		if ((adcbatchid != lastadcbatchid) && (jabber == 0)) {
-			sendstatus(ENDSEQ, ps, pcb, lastadcbatchid); // send end of seq status
+		/* send end of sequence status packet if end of batch sequence */
+		if ((sendendstatus > 0) && (jabber == 0)) {
+			sendstatus(ENDSEQ, ps, pcb, lastadcbatchid ); // send end of seq status
+			sendendstatus = 0;	// cancel the flag
 			lastadcbatchid = adcbatchid;
-			statuspkt.adcpktssent = 0;	// end of seqence so start again at 0
+			statuspkt.adcpktssent = 0;	// end of sequence so start again at 0
 		}
 
 		/* if we have a trigger, send a sample packet */

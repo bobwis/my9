@@ -9,7 +9,7 @@
 #ifndef ADCSTREAM_H_
 #define ADCSTREAM_H_
 
-#include "freertos.h"
+#include "FreeRTOS.h"
 #include "task.h"
 
 #define UDPBUFSIZE (1472)
@@ -53,7 +53,7 @@ extern uint16_t padding1;			// unused
 extern uint8_t rtseconds;			// real time seconds, synced to the gps 1pps pulse
 extern uint8_t	adcbatchid;	// adc sequence number of a batch of 1..n consecutive triggered buffers
 extern int jabber;			// jabber timeout for spamming detections
-
+extern uint8_t sendendstatus;	// flag from adc to udp to send status
 
 
 #endif /* ADCSTREAM_H_ */

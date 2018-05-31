@@ -147,7 +147,8 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
   *
   * @retval None
   */
-int main(void){
+int main(void)
+{
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -808,8 +809,8 @@ static void MX_USART6_UART_Init(void)
 static void MX_DMA_Init(void) 
 {
   /* DMA controller clock enable */
-  __HAL_RCC_DMA2_CLK_ENABLE();
   __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream1_IRQn interrupt configuration */
@@ -1248,7 +1249,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			}
 		}
 		else {
-			statuspkt.gpsuptime = 0;
+			statuspkt.gpsuptime = 0;	// gps uptime is zero
+			statuspkt.epochsecs = 0;	// make epoch time obviously wrong
 			epochvalid = 0;
 		}
 		return;
