@@ -1113,6 +1113,10 @@ void StartDefaultTask(void const * argument)
 
 		osDelay(100);
 
+		printf("\n\n--------------------------\nDetector S/N=%d\n",MY_UID);
+#ifdef TESTING
+		printf("*** TESTING BUILD USED ***\n");
+#endif
 		setupneo();
 		printf("Neo7 setup returned\n\r");
 

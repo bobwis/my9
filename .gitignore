@@ -75,3 +75,4 @@ Debug/Src/subdir.mk
 Debug/startup/subdir.mk
 NUCLEO-F767ZI.xml
 .settings/language.settings.xml
+Debug/my9.bin
