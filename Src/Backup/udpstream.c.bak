@@ -8,7 +8,7 @@
 #include "udpstream.h"
 #include "adcstream.h"
 #include "mydebug.h"
-#include "freertos.h"
+#include "FreeRTOS.h"
 #include "neo7m.h"
 #include "ip_addr.h"
 #include "lwip/dns.h"
@@ -207,9 +207,9 @@ void startudp() {
 			printf("ulNotificationValue = %d\n",ulNotificationValue );
 		}
 #endif
-		/* send end of sequence status packet if endseq */
+		/* send end of sequence status packet if end of batch sequence */
 		if ((sendendstatus > 0) && (jabber == 0)) {
-			sendstatus(ENDSEQ, ps, pcb, sendendstatus /* lastadcbatchid */ ); // send end of seq status
+			sendstatus(ENDSEQ, ps, pcb, lastadcbatchid ); // send end of seq status
 			sendendstatus = 0;	// cancel the flag
 			lastadcbatchid = adcbatchid;
 			statuspkt.adcpktssent = 0;	// end of sequence so start again at 0

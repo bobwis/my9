@@ -9,7 +9,7 @@
 #ifndef ADCSTREAM_H_
 #define ADCSTREAM_H_
 
-#include "freertos.h"
+#include "FreeRTOS.h"
 #include "task.h"
 
 #define UDPBUFSIZE (1472)

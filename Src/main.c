@@ -1114,6 +1114,9 @@ void StartDefaultTask(void const * argument)
 		osDelay(100);
 
 		printf("\n\n--------------------------\nDetector S/N=%d\n",MY_UID);
+
+		printf("STM_UUID=%x %x %x\n",STM32_UUID[0],STM32_UUID[1],STM32_UUID[2]);
+
 #ifdef TESTING
 		printf("*** TESTING BUILD USED ***\n");
 #endif
@@ -1186,8 +1189,12 @@ void StarLPTask(void const * argument)
   /* USER CODE BEGIN StarLPTask */
 static uint32_t trigs = 0;
 
+osDelay(15000);
 
-//	http_server_netconn_init();
+	printf("starting httpd\n");
+    httpd_init();		// start the www server
+	printf("starting http client\n");
+//    httpclient();		// zzz testing
 
 	osDelay(1000);
 	statuspkt.adcudpover = 0;		// debug use count overruns
@@ -1207,8 +1214,9 @@ static uint32_t trigs = 0;
 		}
 		trigs = statuspkt.trigcount;
 	}
-  /* USER CODE END StarLPTask */
+	  /* USER CODE END StarLPTask */
 }
+
 
 /* Callback01 function */
 void Callback01(void const * argument)

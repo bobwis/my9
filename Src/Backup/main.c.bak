@@ -147,7 +147,8 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
   *
   * @retval None
   */
-int main(void){
+int main(void)
+{
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -808,8 +809,8 @@ static void MX_USART6_UART_Init(void)
 static void MX_DMA_Init(void) 
 {
   /* DMA controller clock enable */
-  __HAL_RCC_DMA2_CLK_ENABLE();
   __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream1_IRQn interrupt configuration */
@@ -1112,6 +1113,10 @@ void StartDefaultTask(void const * argument)
 
 		osDelay(100);
 
+		printf("\n\n--------------------------\nDetector S/N=%d\n",MY_UID);
+#ifdef TESTING
+		printf("*** TESTING BUILD USED ***\n");
+#endif
 		setupneo();
 		printf("Neo7 setup returned\n\r");
 
@@ -1182,6 +1187,7 @@ void StarLPTask(void const * argument)
 static uint32_t trigs = 0;
 
 
+httpd_init();
 //	http_server_netconn_init();
 
 	osDelay(1000);
@@ -1202,8 +1208,24 @@ static uint32_t trigs = 0;
 		}
 		trigs = statuspkt.trigcount;
 	}
+}
+
+int httpd_post_receive_data(void *connection, struct pbuf *p)
+{
+
+}
+int httpd_post_begin(void *connection, const char *uri, const char *http_request,
+        u16_t http_request_len, int content_len, char *response_uri,
+        u16_t response_uri_len, u8_t *post_auto_wnd)
+{
+
+}
+int httpd_post_finished(void *connection, char *response_uri, u16_t response_uri_len)
+{
   /* USER CODE END StarLPTask */
 }
+
+
 
 /* Callback01 function */
 void Callback01(void const * argument)

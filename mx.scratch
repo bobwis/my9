@@ -63,6 +63,7 @@
 	   <include>..\Drivers\STM32F7xx_HAL_Driver\Inc\Legacy</include>
 	   <include>..\Middlewares\Third_Party\FreeRTOS\Source\portable\GCC\ARM_CM7\r0p1</include>
 	   <include>..\Middlewares\Third_Party\LwIP\src\include\netif\ppp</include>
+	   <include>..\Middlewares\Third_Party\LwIP\src\apps\httpd</include>
 	   <include>..\Middlewares\ST\STM32_USB_Device_Library\Core\Inc</include>
 	   <include>..\Middlewares\ST\STM32_USB_Device_Library\Class\CDC\Inc</include>
 	   <include>..\Drivers\CMSIS\Device\ST\STM32F7xx\Include</include>

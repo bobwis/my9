@@ -4,23 +4,20 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../Middlewares/Third_Party/LwIP/src/netif/ethernet.c \
-../Middlewares/Third_Party/LwIP/src/netif/lowpan6.c \
-../Middlewares/Third_Party/LwIP/src/netif/slipif.c 
+../Middlewares/Third_Party/LwIP/src/apps/httpd/fs.c \
+../Middlewares/Third_Party/LwIP/src/apps/httpd/httpd.c 
 
 OBJS += \
-./Middlewares/Third_Party/LwIP/src/netif/ethernet.o \
-./Middlewares/Third_Party/LwIP/src/netif/lowpan6.o \
-./Middlewares/Third_Party/LwIP/src/netif/slipif.o 
+./Middlewares/Third_Party/LwIP/src/apps/httpd/fs.o \
+./Middlewares/Third_Party/LwIP/src/apps/httpd/httpd.o 
 
 C_DEPS += \
-./Middlewares/Third_Party/LwIP/src/netif/ethernet.d \
-./Middlewares/Third_Party/LwIP/src/netif/lowpan6.d \
-./Middlewares/Third_Party/LwIP/src/netif/slipif.d 
+./Middlewares/Third_Party/LwIP/src/apps/httpd/fs.d \
+./Middlewares/Third_Party/LwIP/src/apps/httpd/httpd.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
-Middlewares/Third_Party/LwIP/src/netif/%.o: ../Middlewares/Third_Party/LwIP/src/netif/%.c
+Middlewares/Third_Party/LwIP/src/apps/httpd/%.o: ../Middlewares/Third_Party/LwIP/src/apps/httpd/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: MCU GCC Compiler'
 	@echo $(PWD)
