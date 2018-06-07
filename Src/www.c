@@ -61,15 +61,15 @@ void  httpclient()
 	uint32_t ip;
 	int err;
 	static ip_addr_t remoteip;
-	char Page[] = /* "hello.html"; */ "/api/Device/3333444S";
-	char Postvars[] = {0}; // NULL
+	char Page[] = "/hello.html"; // "/api/Device/3333444S";
+	char *Postvars = NULL;
 
-	err = dnslookup(/* "10.10.201.159" */"lightning.vk4ya.space", &remoteip);
+	err = dnslookup( "10.10.201.159" /* "lightning.vk4ya.space" */, &remoteip);
 	ip = remoteip.addr;
 	printf("\nHTTP Target IP: %lu.%lu.%lu.%lu\n", ip & 0xff, (ip & 0xff00) >> 8,
 			(ip & 0xff0000) >> 16, (ip & 0xff000000) >> 24);
 	printf("calling hc_open\n");
 osDelay(1000);
-	result = hc_open(remoteip, Page, 0 /*Postvars*/, returnpage);
+	result = hc_open(remoteip, Page, Postvars, returnpage);
 //	printf("result=%d\n",result);
 }
