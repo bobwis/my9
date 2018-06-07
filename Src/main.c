@@ -1174,7 +1174,6 @@ void StartDefaultTask(void const * argument)
 #endif
 
 		setupnotify();
-
 		startadc();
 		while (dhcpok) {
 			startudp();		// never returns?
@@ -1189,17 +1188,20 @@ void StarLPTask(void const * argument)
   /* USER CODE BEGIN StarLPTask */
 static uint32_t trigs = 0;
 
+
+statuspkt.adcudpover = 0;		// debug use count overruns
+statuspkt.trigcount = 0;		// debug use adc trigger count
+statuspkt.udpsent = 0;	// debug use adc udp sample packet sent count
 osDelay(15000);
 
-	printf("starting httpd\n");
-    httpd_init();		// start the www server
+//	printf("starting httpd\n");
+//    httpd_init();		// start the www server
+    osDelay(2000);
 	printf("starting http client\n");
-//    httpclient();		// zzz testing
+    httpclient();		// zzz testing
+    for(;;) { tcp_tmr(); osDelay(1); }
 
-	osDelay(1000);
-	statuspkt.adcudpover = 0;		// debug use count overruns
-	statuspkt.trigcount = 0;		// debug use adc trigger count
-	statuspkt.udpsent = 0;	// debug use adc udp sample packet sent count
+
 
 	for (;;) {
 		osDelay(2000);
@@ -1214,9 +1216,8 @@ osDelay(15000);
 		}
 		trigs = statuspkt.trigcount;
 	}
-	  /* USER CODE END StarLPTask */
+  /* USER CODE END StarLPTask */
 }
-
 
 /* Callback01 function */
 void Callback01(void const * argument)

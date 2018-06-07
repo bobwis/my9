@@ -148,8 +148,6 @@ static void hc_error(void *arg, err_t err)
     free(state->PostVars);
     free(state->Page);
     free(state);
-
-    printf("hc_error: err=%d\n",err);
 }
 
 // Function that lwip calls when the connection is idle
@@ -317,7 +315,7 @@ int hc_open(ip_addr_t remoteIP, char *Page, char *PostVars, void (* returnpage)(
 	tcp_arg(pcb, state);
 
 	// Open connect (SEND SYN)
-	err = tcp_connect(pcb, &remoteIP, 8080, hc_connected);
+	err = tcp_connect(pcb, &remoteIP, 80, hc_connected);
 
 	if (err != ERR_OK) {
 		printf("hc_open failed with %d\n",err);

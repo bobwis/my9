@@ -7,7 +7,6 @@
 #include "main.h"
 #include "stm32f7xx_hal.h"
 #include "lwip.h"
-#include "httpclient.h"
 
 
 /*--------------------------------------------------*/
@@ -44,32 +43,27 @@ int httpd_post_finished(void *connection, char *response_uri,
 // http client
 /* ---------------------------------------------- */
 
-
-// callback with the page - this takes quite a few seconds to get here after the request has gone out
-void returnpage(volatile u8_t Num, volatile hc_errormsg errorm, volatile char *content, volatile u16_t charcount)
-{
-if (errorm == 0)
-	printf("returnpage: Num=%d, errorm=%d, charcount=%d, content=%s\n",Num,errorm,charcount,content);
-else
-	printf("returnpage: (error returned) Num=%d, errorm=%d\n",Num,errorm,charcount,content);
-}
-
-
 void  httpclient()
 {
 	volatile int result;
 	uint32_t ip;
 	int err;
 	static ip_addr_t remoteip;
-	char Page[] = /* "hello.html"; */ "/api/Device/3333444S";
+	char Page[] = "/api/Device/3333444S";
 	char Postvars[] = {0}; // NULL
 
-	err = dnslookup(/* "10.10.201.159" */"lightning.vk4ya.space", &remoteip);
+	static struct reply_struc {
+	  u8_t Num;
+	  char errorm[16];
+	  char dunno[16];
+	} reply;
+
+	err = dnslookup("lightning.vk4ya.space", &remoteip);
 	ip = remoteip.addr;
 	printf("\nHTTP Target IP: %lu.%lu.%lu.%lu\n", ip & 0xff, (ip & 0xff00) >> 8,
 			(ip & 0xff0000) >> 16, (ip & 0xff000000) >> 24);
+
 	printf("calling hc_open\n");
-osDelay(1000);
-	result = hc_open(remoteip, Page, 0 /*Postvars*/, returnpage);
-//	printf("result=%d\n",result);
+	result = hc_open(remoteip, Page, 0 /*Postvars*/, &reply);
+	printf("result=%d\n",result);
 }
