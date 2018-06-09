@@ -107,3 +107,4 @@ Inc/Backup/httpclient.h.bak
 Inc/Backup/lwipopts.h.bak
 Inc/Backup/main.h.bak
 *.bak
+.settings/language.settings.xml
