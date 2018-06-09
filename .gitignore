@@ -99,3 +99,11 @@ Debug/Middlewares/Third_Party/LwIP/src/core/subdir.mk
 Debug/Middlewares/Third_Party/LwIP/src/netif/ppp/subdir.mk
 Debug/Middlewares/Third_Party/LwIP/src/netif/subdir.mk
 Debug/Middlewares/Third_Party/LwIP/system/OS/subdir.mk
+Debug/makefile
+Debug/objects.mk
+Debug/Middlewares/Third_Party/LwIP/src/apps/httpd/subdir.mk
+Inc/Backup/adcstream.h.bak
+Inc/Backup/httpclient.h.bak
+Inc/Backup/lwipopts.h.bak
+Inc/Backup/main.h.bak
+*.bak
