@@ -54,6 +54,6 @@ dkms.conf
 NUCLEO-F767ZI.xml
 .settings/language.settings.xml
 *.mk
-*,bin
+*.bin
 *.list
 
