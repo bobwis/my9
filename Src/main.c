@@ -1216,7 +1216,7 @@ void StarLPTask(void const * argument)
 		if (reqtimer > 400) {
 			reqtimer = 0;
 //		printf("calling http client..\n");
-//			httpclient();		// zzz testing
+			httpclient();		// zzz testing
 //			printf("%d\n", ++counter);
 //			stats_display() ;  // this needs stats in LwIP enabling to do anything
 		}
