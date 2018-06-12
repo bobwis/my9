@@ -44,32 +44,46 @@ int httpd_post_finished(void *connection, char *response_uri,
 // http client
 /* ---------------------------------------------- */
 
+// callback with the page
+void returnpage(volatile u8_t Num, volatile hc_errormsg errorm,
+		volatile char *content, volatile u16_t charcount) {
+	char *errormsg[] = {
+			"OK",
+			"OUT_MEM",
+			"TIMEOUT",
+			"NOT_FOUND",
+			"GEN_ERROR"
+		};
 
-// callback with the page - this takes quite a few seconds to get here after the request has gone out
-void returnpage(volatile u8_t Num, volatile hc_errormsg errorm, volatile char *content, volatile u16_t charcount)
-{
-if (errorm == 0)
-	printf("returnpage: Num=%d, errorm=%d, charcount=%d, content=%s\n",Num,errorm,charcount,content);
-else
-	printf("returnpage: (error returned) Num=%d, errorm=%d\n",Num,errorm,charcount,content);
+	if (errorm == 0)
+;//		printf("returnpage: Num=%d, errorm=%d, charcount=%d, content=%s\n", Num,
+//				errorm, charcount, content);
+	else {
+
+		printf("returnpage: (error returned) Num=%d, errno=%d, error=%s\n", Num, errorm, errormsg[errorm]);
+	}
 }
 
 
-void  httpclient()
-{
+void httpclient() {
 	volatile int result;
 	uint32_t ip;
 	int err;
-	static ip_addr_t remoteip;
-	char Page[] = "/hello.html"; // "/api/Device/3333444S";
-	char *Postvars = NULL;
+	static ip_addr_t remoteip = { 0 };
+	static char Page[] =  "hello.html"; //  "api/Device/3333444S";
+	static char *Postvars = "mypostvars"; // NULL;
 
-	err = dnslookup( "10.10.201.159" /* "lightning.vk4ya.space" */, &remoteip);
-	ip = remoteip.addr;
-	printf("\nHTTP Target IP: %lu.%lu.%lu.%lu\n", ip & 0xff, (ip & 0xff00) >> 8,
-			(ip & 0xff0000) >> 16, (ip & 0xff000000) >> 24);
-	printf("calling hc_open\n");
-osDelay(1000);
-	result = hc_open(remoteip, Page, Postvars, returnpage);
+	if (remoteip.addr == 0) {
+		err = dnslookup( "10.10.201.159" /* "lightning.vk4ya.space" */,&remoteip);
+		osDelay(5000);
+		ip = remoteip.addr;
+		printf("\nHTTP Target IP: %lu.%lu.%lu.%lu\n", ip & 0xff,
+				(ip & 0xff00) >> 8, (ip & 0xff0000) >> 16,
+				(ip & 0xff000000) >> 24);
+	}
+
+//	printf("calling hc_open\n");
+
+	result = hc_open(remoteip, Page, (uint32_t)0 /* NULL*/ /* Postvars */, returnpage);
 //	printf("result=%d\n",result);
 }

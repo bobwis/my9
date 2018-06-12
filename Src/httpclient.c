@@ -278,6 +278,7 @@ int hc_open(ip_addr_t remoteIP, char *Page, char *PostVars, void (* returnpage)(
 	{
 		printf("hc_open: Not enough memory for pcb or state\n");
 		//Not enough memory
+		for(;;);
 		return 0;
 	}
 
@@ -305,6 +306,8 @@ int hc_open(ip_addr_t remoteIP, char *Page, char *PostVars, void (* returnpage)(
 	// Place allocated copy data
 	strcpy(state->Page, Page);
 	if(PostVars != NULL) strcpy(state->PostVars, PostVars);
+	else
+		state->PostVars = NULL;
 
 	// Bind to local IP & local port
 	while(tcp_bind(pcb, IP_ADDR_ANY, port) != ERR_OK)

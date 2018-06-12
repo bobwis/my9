@@ -84,7 +84,15 @@
 /*----- Value in opt.h for MEM_ALIGNMENT: 1 -----*/
 #define MEM_ALIGNMENT 4
 /*----- Default Value for MEM_SIZE: 1600 ---*/
-#define MEM_SIZE 4096
+#define MEM_SIZE 12000
+/*----- Default Value for MEMP_OVERFLOW_CHECK: 0 ---*/
+#define MEMP_OVERFLOW_CHECK 2
+/*----- Default Value for MEMP_SANITY_CHECK: 0 ---*/
+#define MEMP_SANITY_CHECK 1
+/*----- Default Value for MEMP_NUM_TCP_PCB_LISTEN: 8 ---*/
+#define MEMP_NUM_TCP_PCB_LISTEN 16
+/*----- Default Value for PBUF_POOL_SIZE: 16 ---*/
+#define PBUF_POOL_SIZE 32
 /*----- Value in opt.h for LWIP_ETHERNET: LWIP_ARP || PPPOE_SUPPORT -*/
 #define LWIP_ETHERNET 1
 /*----- Default Value for LWIP_RAW: 0 ---*/
@@ -161,9 +169,18 @@
 #define CHECKSUM_CHECK_ICMP 0
 /*----- Value in opt.h for CHECKSUM_CHECK_ICMP6: 1 -----*/
 #define CHECKSUM_CHECK_ICMP6 0
+/*----- Default Value for LWIP_DBG_MIN_LEVEL: LWIP_DBG_LEVEL_ALL ---*/
+#define LWIP_DBG_MIN_LEVEL LWIP_DBG_LEVEL_WARNING
+/*----- Default Value for PBUF_DEBUG: LWIP_DBG_OFF ---*/
+#define PBUF_DEBUG LWIP_DBG_ON
+/*----- Default Value for MEM_DEBUG: LWIP_DBG_OFF ---*/
+#define MEM_DEBUG LWIP_DBG_ON
+/*----- Default Value for MEMP_DEBUG: LWIP_DBG_OFF ---*/
+#define MEMP_DEBUG LWIP_DBG_ON
 /*-----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
-
+#define MEMP_OVERFLOW_CHECK 2
+#define MEMP_SANITY_CHECK 1
 /* USER CODE END 1 */
 
 #ifdef __cplusplus

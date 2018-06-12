@@ -104,7 +104,7 @@ int dnslookup(char *name, struct ip4_addr *ip) {
 			printf(".");
 			if (ip_ready) {
 				ip->addr = ip_ready;
-				err = ERR_OK;
+				return(ERR_OK);
 			}
 		if (err == ERR_OK)
 			break;

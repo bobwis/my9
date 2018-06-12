@@ -1029,14 +1029,14 @@ uint32_t movavg(uint32_t new) {
 	return (sum >> 4);
 }
 
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {  // every second 1 pps (on external signal)
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) { // every second 1 pps (on external signal)
 	uint32_t diff;
 	static uint32_t lastcap = 0;
 
 	HAL_GPIO_TogglePin(GPIOB, LD1_Pin);		// green led
 
 	if (htim->Instance == TIM2) {
-		rtseconds = (statuspkt.NavPvt.sec + 1 ) % 60;		// assume we get here before serial comms updates gps seconds field
+		rtseconds = (statuspkt.NavPvt.sec + 1) % 60;// assume we get here before serial comms updates gps seconds field
 		statuspkt.epochsecs++;
 //		neotime();
 #if 0		// clktrim with non-resetting pps counter
@@ -1063,14 +1063,10 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {  // every second 1 pp
 	/* USER CODE END Callback 1 */
 }
 
-
-
-void setupnotify()
-{
-    /* Store the handle of the calling task. */
-    xTaskToNotify = xTaskGetCurrentTaskHandle();
+void setupnotify() {
+	/* Store the handle of the calling task. */
+	xTaskToNotify = xTaskGetCurrentTaskHandle();
 }
-
 
 /* USER CODE END 4 */
 
@@ -1113,9 +1109,10 @@ void StartDefaultTask(void const * argument)
 
 		osDelay(100);
 
-		printf("\n\n--------------------------\nDetector S/N=%d\n",MY_UID);
+		printf("\n\n--------------------------\nDetector S/N=%d\n", MY_UID);
 
-		printf("STM_UUID=%x %x %x\n",STM32_UUID[0],STM32_UUID[1],STM32_UUID[2]);
+		printf("STM_UUID=%x %x %x\n", STM32_UUID[0], STM32_UUID[1],
+				STM32_UUID[2]);
 
 #ifdef TESTING
 		printf("*** TESTING BUILD USED ***\n");
@@ -1139,7 +1136,8 @@ void StartDefaultTask(void const * argument)
 		//  (++) Input Capture :  HAL_TIM_IC_Start(), HAL_TIM_IC_Start_DMA(), HAL_TIM_IC_Start_IT()
 
 		// capture on PB10 input
-		if ((err = HAL_TIM_IC_Start_DMA(&htim2, TIM_CHANNEL_3, t2cap,(sizeof(t2cap) / 4))) != HAL_OK) {
+		if ((err = HAL_TIM_IC_Start_DMA(&htim2, TIM_CHANNEL_3, t2cap,
+				(sizeof(t2cap) / 4))) != HAL_OK) {
 			printf("TIM_Base_Start_DMA err %i", err);
 			_Error_Handler(__FILE__, __LINE__);
 		}
@@ -1175,6 +1173,9 @@ void StartDefaultTask(void const * argument)
 
 		setupnotify();
 		startadc();
+
+//		while(1)
+//			osDelay(1);
 		while (dhcpok) {
 			startudp();		// never returns?
 		}
@@ -1186,35 +1187,39 @@ void StartDefaultTask(void const * argument)
 void StarLPTask(void const * argument)
 {
   /* USER CODE BEGIN StarLPTask */
-static uint32_t trigs = 0;
+	static uint32_t trigs = 0;
+	uint32_t reqtimer = 0;
+	int counter = 0;
 
+	statuspkt.adcudpover = 0;		// debug use count overruns
+	statuspkt.trigcount = 0;		// debug use adc trigger count
+	statuspkt.udpsent = 0;	// debug use adc udp sample packet sent count
+	osDelay(13000);
 
-statuspkt.adcudpover = 0;		// debug use count overruns
-statuspkt.trigcount = 0;		// debug use adc trigger count
-statuspkt.udpsent = 0;	// debug use adc udp sample packet sent count
-osDelay(15000);
-
-//	printf("starting httpd\n");
-//    httpd_init();		// start the www server
-    osDelay(2000);
-	printf("starting http client\n");
-    httpclient();		// zzz testing
-    for(;;) { tcp_tmr(); osDelay(1); }
-
-
+	printf("starting httpd\n");
+	httpd_init();		// start the www server
 
 	for (;;) {
-		osDelay(2000);
-		if (statuspkt.trigcount > (3600 + trigs))	// spamming: 3600 packets sent in 2 Sec (out of approx 7.2K packets)
-		{
-			jabber = 1;		// 2 seconds pause
+		tcp_tmr();
+		reqtimer++;
+		osDelay(1);
+		if (statuspkt.trigcount > (3600 + trigs))// spamming: 3600 packets sent in 2 Sec (out of approx 7.2K packets)
+				{
+			jabber = 2000;		// 2 seconds pause
 			statuspkt.jabcnt++;
-		}
-		else {
+		} else {
 			if (jabber)
 				jabber--;		// de-arm count
 		}
 		trigs = statuspkt.trigcount;
+
+		if (reqtimer > 400) {
+			reqtimer = 0;
+//		printf("calling http client..\n");
+//			httpclient();		// zzz testing
+//			printf("%d\n", ++counter);
+//			stats_display() ;  // this needs stats in LwIP enabling to do anything
+		}
 	}
   /* USER CODE END StarLPTask */
 }
@@ -1248,7 +1253,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		return;
 	}
 
-	if (htim->Instance == TIM6) {			// 1 second (internally timed, not compensated by GPS)
+	if (htim->Instance == TIM6) {// 1 second (internally timed, not compensated by GPS)
 //		printf("T6 PeriodElapsedCallback %u SR=%u\n", myfullcomplete, TIM6->SR);
 		t1sec++;
 		statuspkt.sysuptime++;
@@ -1260,8 +1265,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				statuspkt.epochsecs = calcepoch();
 				epochvalid = 1;
 			}
-		}
-		else {
+		} else {
 			statuspkt.gpsuptime = 0;	// gps uptime is zero
 			statuspkt.epochsecs = 0;	// make epoch time obviously wrong
 			epochvalid = 0;
