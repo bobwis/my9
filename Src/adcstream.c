@@ -445,8 +445,8 @@ void startadc() {
 		printf("******** pvPortMalloc not on word boundary *********\n");
 	}
 
-	printf("(&(*pktbuf)[0])=0x%x ", &((*pktbuf)[0]));
-	printf("(&(*pktbuf)[UDPBUFSIZE / 4])=0x%x\n", &((*pktbuf)[UDPBUFSIZE / 4]));
+//	printf("(&(*pktbuf)[0])=0x%x ", &((*pktbuf)[0]));
+//	printf("(&(*pktbuf)[UDPBUFSIZE / 4])=0x%x\n", &((*pktbuf)[UDPBUFSIZE / 4]));
 
 	for (i = 0; i < UDPBUFSIZE / 4; i++) {	// fill buffers, 4 bytes at a time
 		(*pktbuf)[i] = 0x55555555;

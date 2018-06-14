@@ -4,10 +4,18 @@
  *  Created on: 6Jun.,2018
  *      Author: bob
  */
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 #include "main.h"
 #include "stm32f7xx_hal.h"
 #include "lwip.h"
 #include "httpclient.h"
+#include "www.h"
+#include "neo7m.h"
+
+// Support functions
 
 
 /*--------------------------------------------------*/
@@ -54,10 +62,17 @@ void returnpage(volatile u8_t Num, volatile hc_errormsg errorm,
 			"NOT_FOUND",
 			"GEN_ERROR"
 		};
+	volatile uint32_t sn;
 
-	if (errorm == 0)
-;//		printf("returnpage: Num=%d, errorm=%d, charcount=%d, content=%s\n", Num,
+
+	if (errorm == 0) {
+//		printf("returnpage: Num=%d, errorm=%d, charcount=%d, content=%s\n", Num,
 //				errorm, charcount, content);
+	if (sscanf(content,"%5u",&sn) == 1) {		// converted a number
+		statuspkt.uid = sn;
+		printf("Response from Server, Serial Number Changed to %lu\n",statuspkt.uid);
+		}
+	}
 	else {
 
 		printf("returnpage: (error returned) Num=%d, errno=%d, error=%s\n", Num, errorm, errormsg[errorm]);
@@ -65,16 +80,15 @@ void returnpage(volatile u8_t Num, volatile hc_errormsg errorm,
 }
 
 
-void httpclient() {
+void httpclient(char Page[64]) {
 	volatile int result;
 	uint32_t ip;
 	int err;
 	static ip_addr_t remoteip = { 0 };
-	static char Page[] =  "hello.html"; //  "api/Device/3333444S";
-	static char *Postvars = "mypostvars"; // NULL;
+	static char *Postvars = NULL;
 
 	if (remoteip.addr == 0) {
-		err = dnslookup( "10.10.201.159" /* "lightning.vk4ya.space" */,&remoteip);
+		err = dnslookup(/*"192.168.1.102" *//* "b7.bayside.space" */ "lightning.vk4ya.space" ,&remoteip);
 		osDelay(5000);
 		ip = remoteip.addr;
 		printf("\nHTTP Target IP: %lu.%lu.%lu.%lu\n", ip & 0xff,
@@ -84,6 +98,6 @@ void httpclient() {
 
 //	printf("calling hc_open\n");
 
-	result = hc_open(remoteip, Page, (uint32_t)0 /* NULL*/ /* Postvars */, returnpage);
+	result = hc_open(remoteip, Page, Postvars, returnpage);
 //	printf("result=%d\n",result);
 }
