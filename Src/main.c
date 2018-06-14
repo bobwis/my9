@@ -1187,6 +1187,7 @@ void StarLPTask(void const * argument) {
 		}
 		trigs = statuspkt.trigcount;
 
+<<<<<<< HEAD
 		if (statuspkt.uid == MY_UID)		// not yet found new S/N from server
 		{
 			if (reqtimer > 10000) {
@@ -1195,6 +1196,14 @@ void StarLPTask(void const * argument) {
 				httpclient(stmuid);		// zzz testing
 //				stats_display() ; // this needs stats in LwIP enabling to do anything
 			}
+=======
+		if (reqtimer > 400) {
+			reqtimer = 0;
+//		printf("calling http client..\n");
+			httpclient();		// zzz testing
+//			printf("%d\n", ++counter);
+//			stats_display() ;  // this needs stats in LwIP enabling to do anything
+>>>>>>> 4c11eb83772d738ce09ab928c5900027996140bb
 		}
 	}
 	/* USER CODE END StarLPTask */

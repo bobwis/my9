@@ -12,11 +12,15 @@
 #include "stm32f7xx_hal.h"
 #include "lwip.h"
 #include "httpclient.h"
+<<<<<<< HEAD
 #include "www.h"
 #include "neo7m.h"
 
 // Support functions
 
+=======
+#include "udpstream.h"
+>>>>>>> 4c11eb83772d738ce09ab928c5900027996140bb
 
 /*--------------------------------------------------*/
 // httpd server support
@@ -85,10 +89,19 @@ void httpclient(char Page[64]) {
 	uint32_t ip;
 	int err;
 	static ip_addr_t remoteip = { 0 };
+<<<<<<< HEAD
 	static char *Postvars = NULL;
 
 	if (remoteip.addr == 0) {
 		err = dnslookup(/*"192.168.1.102" *//* "b7.bayside.space" */ "lightning.vk4ya.space" ,&remoteip);
+=======
+	char page[50];
+
+	sprintf(page,"/API/Device/%d%d%d", STM32_UUID[0],STM32_UUID[0],STM32_UUID[0]);
+
+	if (remoteip.addr == 0) {
+		err = dnslookup( SERVER_DESTINATION, &remoteip);
+>>>>>>> 4c11eb83772d738ce09ab928c5900027996140bb
 		osDelay(5000);
 		ip = remoteip.addr;
 		printf("\nHTTP Target IP: %lu.%lu.%lu.%lu\n", ip & 0xff,
@@ -96,8 +109,12 @@ void httpclient(char Page[64]) {
 				(ip & 0xff000000) >> 24);
 	}
 
+<<<<<<< HEAD
 //	printf("calling hc_open\n");
 
 	result = hc_open(remoteip, Page, Postvars, returnpage);
 //	printf("result=%d\n",result);
+=======
+	result = hc_open(remoteip, page, NULL, returnpage);
+>>>>>>> 4c11eb83772d738ce09ab928c5900027996140bb
 }
