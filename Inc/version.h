@@ -11,10 +11,17 @@
 #define MAJORVERSION 0
 #define MINORVERSION 4
 
-#define MY_UID 1051	// 16 bits  "serial number" of the lightning detector
+// initial serial number of the lightning detector 16 bits
+//#define MY_UID 1051/1001 // Bobs home development version
+//#define MY_UID 1002 // Ormiston home production version
+//#define MY_UID 1003	// Mount Cotton production version
+//#define MY_UID 1004 // Bobs home production version
+#define MY_UID 1999 // Change this or add your own UID here
+
+
 
 // TESTING Speeds up the frequency of status packets
-#if		1
+#if		0
 #define TESTING
 #endif
 

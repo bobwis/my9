@@ -56,3 +56,4 @@ NUCLEO-F767ZI.xml
 *.mk
 *.list
 
+*.bin
