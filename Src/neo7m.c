@@ -511,8 +511,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 			for (unsigned int i = offset; i < sizeof(statuspkt.NavPvt); i++) {
 				*((char*) (&(statuspkt.NavPvt)) + (i - offset)) = PACKETstore[i]; // copy into global struct
 			}
-		if (statuspkt.NavPvt.flags & 1)	// locked
+		if (statuspkt.NavPvt.flags & 1)	{// locked
+			calcepoch();		// should not be needed if out 1 sec timer was accurate, also dbg desyncs this		
 			gpslocked = 1;
+		}
 		else
 			gpslocked = 0;
 		}
