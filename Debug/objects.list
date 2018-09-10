@@ -118,6 +118,7 @@
 "Middlewares/Third_Party/LwIP/src/netif/ppp/vj.o"
 "Middlewares/Third_Party/LwIP/system/OS/sys_arch.o"
 "Src/adcstream.o"
+"Src/eeprom.o"
 "Src/ethernetif.o"
 "Src/fatfs.o"
 "Src/freertos.o"

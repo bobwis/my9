@@ -62,7 +62,7 @@ clean:
 	-@echo ' '
 
 post-build:
-	-@echo 'Generating binary and Printing size information:'
+	-@echo 'Generating hex and Printing size information:'
 	arm-none-eabi-objcopy -O binary "my9.elf" "my9.bin"
 	arm-none-eabi-size "my9.elf"
 	-@echo ' '

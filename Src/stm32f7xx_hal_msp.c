@@ -70,6 +70,9 @@ void HAL_MspInit(void)
 
   /* USER CODE END MspInit 0 */
 
+  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_RCC_SYSCFG_CLK_ENABLE();
+
   HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 
   /* System interrupt init*/
@@ -90,10 +93,10 @@ void HAL_MspInit(void)
 
   /* Peripheral interrupt init */
   /* RCC_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(RCC_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(RCC_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(RCC_IRQn);
   /* FPU_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(FPU_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(FPU_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(FPU_IRQn);
 
   /* USER CODE BEGIN MspInit 1 */
@@ -340,12 +343,9 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef* hdac)
     hdma_dac1.Init.MemInc = DMA_MINC_ENABLE;
     hdma_dac1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
     hdma_dac1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-    hdma_dac1.Init.Mode = DMA_CIRCULAR;
-    hdma_dac1.Init.Priority = DMA_PRIORITY_MEDIUM;
-    hdma_dac1.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
-    hdma_dac1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
-    hdma_dac1.Init.MemBurst = DMA_MBURST_INC8;
-    hdma_dac1.Init.PeriphBurst = DMA_PBURST_SINGLE;
+    hdma_dac1.Init.Mode = DMA_NORMAL;
+    hdma_dac1.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_dac1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_dac1) != HAL_OK)
     {
       _Error_Handler(__FILE__, __LINE__);
@@ -354,7 +354,7 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef* hdac)
     __HAL_LINKDMA(hdac,DMA_Handle1,hdma_dac1);
 
     /* DAC interrupt Init */
-    HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 5, 0);
+    HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 6, 0);
     HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
   /* USER CODE BEGIN DAC_MspInit 1 */
 
@@ -422,7 +422,7 @@ void HAL_MDIOS_MspInit(MDIOS_HandleTypeDef* hmdios)
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     /* MDIOS interrupt Init */
-    HAL_NVIC_SetPriority(MDIOS_IRQn, 5, 0);
+    HAL_NVIC_SetPriority(MDIOS_IRQn, 6, 0);
     HAL_NVIC_EnableIRQ(MDIOS_IRQn);
   /* USER CODE BEGIN MDIOS_MspInit 1 */
 
@@ -555,7 +555,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
     __HAL_LINKDMA(htim_base,hdma[TIM_DMA_ID_CC3],hdma_tim2_up_ch3);
 
     /* TIM2 interrupt Init */
-    HAL_NVIC_SetPriority(TIM2_IRQn, 5, 0);
+    HAL_NVIC_SetPriority(TIM2_IRQn, 6, 0);
     HAL_NVIC_EnableIRQ(TIM2_IRQn);
   /* USER CODE BEGIN TIM2_MspInit 1 */
 
@@ -569,7 +569,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
     /* Peripheral clock enable */
     __HAL_RCC_TIM3_CLK_ENABLE();
     /* TIM3 interrupt Init */
-    HAL_NVIC_SetPriority(TIM3_IRQn, 5, 0);
+    HAL_NVIC_SetPriority(TIM3_IRQn, 6, 0);
     HAL_NVIC_EnableIRQ(TIM3_IRQn);
   /* USER CODE BEGIN TIM3_MspInit 1 */
 
@@ -583,7 +583,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
     /* Peripheral clock enable */
     __HAL_RCC_TIM6_CLK_ENABLE();
     /* TIM6 interrupt Init */
-    HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 5, 0);
+    HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 6, 0);
     HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
   /* USER CODE BEGIN TIM6_MspInit 1 */
 

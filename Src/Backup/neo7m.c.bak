@@ -26,6 +26,7 @@
 #include "stm32f7xx_hal.h"
 #include "neo7m.h"
 #include "adcstream.h"
+#include <time.h>
 
 typedef uint8_t byte;
 
@@ -54,6 +55,7 @@ static struct /*UbxGps*/{
 } UbxGpsv = { .offsetClassProperties = 8, .offsetHeaders = 4,
 		.carriagePosition = 0, };
 
+#if 0	// old version
 // calculate days elapsed since 1 Jan this year
 uint32_t calcedays(int thisyear, int thismonth, int thisdom)
 {
@@ -80,11 +82,12 @@ uint32_t calcedays(int thisyear, int thismonth, int thisdom)
 
 
 // calculate epoch seconds from 1970 to now using GPS date time fields
+// the number of seconds that have elapsed since January 1, 1970 (midnight UTC/GMT), not counting leap seconds
 uint32_t calcepoch()
 {
 	uint32_t tm_sec, tm_min, tm_hour, tm_year, tm_yday;
 	volatile uint32_t result;
-
+// should really prevent gps irq while copying the time
 	tm_sec = statuspkt.NavPvt.sec;
 	tm_min = statuspkt.NavPvt.min;
 	tm_hour = statuspkt.NavPvt.hour;
@@ -92,14 +95,35 @@ uint32_t calcepoch()
 
 	tm_yday = calcedays(statuspkt.NavPvt.year,statuspkt.NavPvt.month,statuspkt.NavPvt.day);
 
-	// calculate seconds between 1st Jan of both years
+	// calculate seconds between 1st Jan of this year and 1970
 	result = tm_sec + tm_min*60 + tm_hour*3600 + tm_yday*86400 +
 	     (tm_year-70)*31536000 + ((tm_year-69)/4)*86400 -
 	     ((tm_year-1)/100)*86400 + ((tm_year+299)/400)*86400;
+ //   printf("Epoch1=%ld\n", (long) result);
    return(result);
 }
+#endif
 
+#if 1	// new version below
+// calculate epoch seconds from 1970 to now using GPS date time fields
+// the number of seconds that have elapsed since January 1, 1970 (midnight UTC/GMT), not counting leap seconds
+uint32_t calcepoch()
+{
+struct tm t;
+    time_t epochtime;
 
+    t.tm_year = statuspkt.NavPvt.year - 1900;
+    t.tm_mon = statuspkt.NavPvt.month-1;           // Month, 0 - jan
+    t.tm_mday = statuspkt.NavPvt.day;          // Day of the month
+    t.tm_hour = statuspkt.NavPvt.hour;
+    t.tm_min = statuspkt.NavPvt.min;
+    t.tm_sec = statuspkt.NavPvt.sec;
+    t.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+    epochtime = mktime(&t);
+//    printf("Epoch2=%ld\n", (long) epochtime);
+    return((uint32_t)epochtime);
+}
+#endif
 /**
  *Extracts from  UBX GPS Library
  * Created by Danila Loginov, July 2, 2016
@@ -511,8 +535,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 			for (unsigned int i = offset; i < sizeof(statuspkt.NavPvt); i++) {
 				*((char*) (&(statuspkt.NavPvt)) + (i - offset)) = PACKETstore[i]; // copy into global struct
 			}
-		if (statuspkt.NavPvt.flags & 1)	// locked
+		if (statuspkt.NavPvt.flags & 1)	{ // locked
+			statuspkt.epochsecs = calcepoch();		// should not be needed if our 1 sec timer was accurate, also dbg desyncs this
 			gpslocked = 1;
+		}
 		else
 			gpslocked = 0;
 		}

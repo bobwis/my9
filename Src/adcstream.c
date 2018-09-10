@@ -313,6 +313,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	timestamp = TIM2->CNT;			// real time
+	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11  /*PB11*/);		// debug pin
 
 	if (dmabufno == 1) {		// second buffer is ready
 		buf = &((*pktbuf)[(UDPBUFSIZE / 4)]);
@@ -321,12 +322,12 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)// adc conversion done (DM
 	}
 
 	adcbuf16 = &((uint16_t *) *buf)[8];
-
+	(*buf)[3] = timestamp;		// this may not get set until now
 //	(*buf)[0] = UDP seq and packet flags	// set in udpstream.c
 	(*buf)[1] = (statuspkt.uid << 16) | (adcbatchid << 8) | (rtseconds << 2)
 			| (adcbufnum++ & 3);	// ADC completed packet counter (24 bits)
 	(*buf)[2] = statuspkt.epochsecs; // statuspkt.NavPvt.iTOW;
-	(*buf)[3] = timestamp;
+
 
 	if (sigsend) {		// oops overrun
 		statuspkt.adcudpover++;		// debug adc overrun udp

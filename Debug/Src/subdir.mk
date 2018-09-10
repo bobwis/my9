@@ -5,6 +5,7 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../Src/adcstream.c \
+../Src/eeprom.c \
 ../Src/ethernetif.c \
 ../Src/fatfs.c \
 ../Src/freertos.c \
@@ -28,6 +29,7 @@ C_SRCS += \
 
 OBJS += \
 ./Src/adcstream.o \
+./Src/eeprom.o \
 ./Src/ethernetif.o \
 ./Src/fatfs.o \
 ./Src/freertos.o \
@@ -51,6 +53,7 @@ OBJS += \
 
 C_DEPS += \
 ./Src/adcstream.d \
+./Src/eeprom.d \
 ./Src/ethernetif.d \
 ./Src/fatfs.d \
 ./Src/freertos.d \

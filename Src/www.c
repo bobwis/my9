@@ -11,10 +11,12 @@
 #include "main.h"
 #include "stm32f7xx_hal.h"
 #include "lwip.h"
+#include "httpd_structs.h"
 #include "httpclient.h"
 #include "www.h"
 #include "neo7m.h"
 #include "udpstream.h"
+//#include "httpd.h"
 
 
 // Support functions
@@ -24,7 +26,7 @@
 // httpd server support
 /*--------------------------------------------------*/
 
-int httpd_cgi_handler(const char *uri, int count, char **http_cgi_params,
+void httpd_cgi_handler(const char *uri, int count, char **http_cgi_params,
 		char **http_cgi_param_vals)
 {
 	int i;
@@ -35,20 +37,51 @@ int httpd_cgi_handler(const char *uri, int count, char **http_cgi_params,
 	}
 }
 
-int httpd_post_receive_data(void *connection, struct pbuf *p) {
+err_t httpd_post_receive_data(void *connection, struct pbuf *p) {
 	printf("httpd_post_receive_data: \n");
 }
 
-int httpd_post_begin(void *connection, const char *uri,
+err_t httpd_post_begin(void *connection, const char *uri,
 		const char *http_request, u16_t http_request_len, int content_len,
 		char *response_uri, u16_t response_uri_len, u8_t *post_auto_wnd) {
 	printf("httpd_post_begin: \n");
 }
 
-int httpd_post_finished(void *connection, char *response_uri,
+void httpd_post_finished(void *connection, char *response_uri,
 		u16_t response_uri_len) {
 	printf("httpd_post_finished: \n");
 }
+
+
+//void http_set_ssi_handler(tSSIHandler ssi_handler, const char **tags, int num_tags);  // proto
+
+
+// embedded ssi handler
+static char *tagname[] = {"tag1","tag2","tag3",(void *)NULL};
+
+tSSIHandler tag_callback(volatile char *tag, char *newstring, int maxlen) {
+	static char *insert[] = {"TAGGED1","TAGGED2","TAGGED3"};
+	int i;
+
+	i = 0;
+    while (tagname[i] != NULL) {
+      if(strcmp(tag, tagname[i]) == 0)		// find tag index
+    	  break;
+      i++;
+    }
+
+	strcpy(newstring,insert[i]);		// display the actual replacement
+	return(strlen(insert[i]));
+}
+
+// embedded ssi tag handler setup
+init_httpd_ssi() {
+
+
+	http_set_ssi_handler(tag_callback, tagname, 3);
+}
+
+
 
 /* ---------------------------------------------- */
 // http client
@@ -68,8 +101,8 @@ void returnpage(volatile u8_t Num, volatile hc_errormsg errorm,
 
 
 	if (errorm == 0) {
-//		printf("returnpage: Num=%d, errorm=%d, charcount=%d, content=%s\n", Num,
-//				errorm, charcount, content);
+		printf("returnpage: Num=%d, errorm=%d, charcount=%d, content=%s\n", Num,
+				errorm, charcount, content);
 	if (sscanf(content,"%5u",&sn) == 1) {		// converted a number
 		statuspkt.uid = sn;
 		printf("A response from Server -> Serial Number Changed to %lu\n",statuspkt.uid);
