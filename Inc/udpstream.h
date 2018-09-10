@@ -17,6 +17,7 @@ void startudp(void);
 //#define SERVER_DESTINATION "10.10.201.243"
 #define SERVER_DESTINATION "10.10.201.159"
 #else
+// if you want UDP ppackets to go somewhere else than straight to the server adjust below
 #define SERVER_DESTINATION "lightning.vk4ya.space"
 //#define SERVER_DESTINATION "112.213.32.44"
 //#define SERVER_DESTINATION "10.10.201.159"

@@ -57,7 +57,5 @@ NUCLEO-F767ZI.xml
 *.bin
 *.list
 
-*.bin
-*.list
+
 /Debug/
-=======

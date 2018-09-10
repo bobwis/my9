@@ -589,4 +589,3 @@ void neotime() {
 		printf("sec: %02d\n",oldsec);
 	}
 }
-
