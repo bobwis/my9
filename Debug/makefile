@@ -10,6 +10,7 @@ RM := rm -rf
 -include sources.mk
 -include startup/subdir.mk
 -include Src/subdir.mk
+-include Middlewares/Third_Party/mbedTLS/library/subdir.mk
 -include Middlewares/Third_Party/LwIP/system/OS/subdir.mk
 -include Middlewares/Third_Party/LwIP/src/netif/ppp/subdir.mk
 -include Middlewares/Third_Party/LwIP/src/netif/subdir.mk
@@ -63,7 +64,7 @@ clean:
 
 post-build:
 	-@echo 'Generating hex and Printing size information:'
-	arm-none-eabi-objcopy -O binary "my9.elf" "my9.bin"
+	arm-none-eabi-objcopy -O ihex "my9.elf" "my9.hex"
 	arm-none-eabi-size "my9.elf"
 	-@echo ' '
 

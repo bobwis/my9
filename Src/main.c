@@ -51,7 +51,7 @@
 #include "stm32f7xx_hal.h"
 #include "cmsis_os.h"
 #include "fatfs.h"
-#include "lwip.h"
+#include "mbedtls.h"
 #include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
@@ -59,12 +59,13 @@
 #include "adcstream.h"
 #include "neo7m.h"
 #include "mydebug.h"
+#include "ip4.h"
 #include "lwip/prot/dhcp.h"
 #include "udpstream.h"
 #include "version.h"
 #include "www.h"
-
-#define netif_dhcp_data(netif) ((struct dhcp*)netif_get_client_data(netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP))
+#include "dhcp.h"
+//#define netif_dhcp_data(netif) ((struct dhcp*)netif_get_client_data(netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP))
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -811,8 +812,8 @@ static void MX_USART6_UART_Init(void)
 static void MX_DMA_Init(void) 
 {
   /* DMA controller clock enable */
-  __HAL_RCC_DMA2_CLK_ENABLE();
   __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream1_IRQn interrupt configuration */
@@ -1090,14 +1091,18 @@ void StartDefaultTask(void const * argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
 
-  /* init code for LWIP */
-  MX_LWIP_Init();
+  /* MX_LWIP_Init() is generated within mbedtls_net_init() function in net_cockets.c file */
+  /* Up to user to call mbedtls_net_init() function in MBEDTLS initialization step */
+
+  /* Up to user define the empty MX_MBEDTLS_Init() function located in mbedtls.c file */
+  MX_MBEDTLS_Init();
 
   /* init code for FATFS */
   MX_FATFS_Init();
 
   /* USER CODE BEGIN 5 */
 	{
+
 		HAL_StatusTypeDef err;
 		struct dhcp *dhcp;
 		int i, dhcpok = 0;
@@ -1237,7 +1242,7 @@ void StarLPTask(void const * argument)
 			if (beeptimeout) {
 				beeptimeout--;
 			} else
-;//				HAL_TIM_Base_Stop(&htim7);		// fast interval timer
+				HAL_TIM_Base_Stop(&htim7);		// fast interval timer
 		}
 		trigs = statuspkt.trigcount;
 

@@ -50,8 +50,7 @@
 #include "main.h"
 #include "stm32f7xx_hal.h"
 #include "cmsis_os.h"
-#include "fatfs.h"
-#include "lwip.h"
+#include "mbedtls.h"
 #include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
@@ -63,8 +62,8 @@
 #include "udpstream.h"
 #include "version.h"
 #include "www.h"
-
-#define netif_dhcp_data(netif) ((struct dhcp*)netif_get_client_data(netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP))
+#include "dhcp.h"
+//#define netif_dhcp_data(netif) ((struct dhcp*)netif_get_client_data(netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP))
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -76,6 +75,7 @@ DMA_HandleTypeDef hdma_adc1;
 CRC_HandleTypeDef hcrc;
 
 DAC_HandleTypeDef hdac;
+DMA_HandleTypeDef hdma_dac1;
 
 MDIOS_HandleTypeDef hmdios;
 
@@ -520,7 +520,7 @@ static void MX_DAC_Init(void)
 
     /**DAC channel OUT1 config 
     */
-  sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
+  sConfig.DAC_Trigger = DAC_TRIGGER_T7_TRGO;
   sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
   if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK)
   {
@@ -810,13 +810,16 @@ static void MX_USART6_UART_Init(void)
 static void MX_DMA_Init(void) 
 {
   /* DMA controller clock enable */
-  __HAL_RCC_DMA2_CLK_ENABLE();
   __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
   /* DMA2_Stream1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
@@ -1086,14 +1089,16 @@ void StartDefaultTask(void const * argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
 
-  /* init code for LWIP */
-  MX_LWIP_Init();
+  /* MX_LWIP_Init() is generated within mbedtls_net_init() function in net_cockets.c file */
+  /* Up to user to call mbedtls_net_init() function in MBEDTLS initialization step */
 
-  /* init code for FATFS */
-  MX_FATFS_Init();
+  /* Up to user define the empty MX_MBEDTLS_Init() function located in mbedtls.c file */
+  MX_MBEDTLS_Init();
 
   /* USER CODE BEGIN 5 */
 	{
+	  MX_FATFS_Init();
+
 		HAL_StatusTypeDef err;
 		struct dhcp *dhcp;
 		int i, dhcpok = 0;
@@ -1233,7 +1238,7 @@ void StarLPTask(void const * argument)
 			if (beeptimeout) {
 				beeptimeout--;
 			} else
-;//				HAL_TIM_Base_Stop(&htim7);		// fast interval timer
+				HAL_TIM_Base_Stop(&htim7);		// fast interval timer
 		}
 		trigs = statuspkt.trigcount;
 

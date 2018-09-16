@@ -71,6 +71,8 @@
 /* Parameters set in STM32CubeMX LwIP Configuration GUI -*/
 /*----- WITH_RTOS enabled (Since FREERTOS is set) -----*/
 #define WITH_RTOS 1
+/*----- WITH_MBEDTLS enabled (Since MBEDTLS and FREERTOS are set) -----*/
+#define WITH_MBEDTLS 1
 /*----- CHECKSUM_BY_HARDWARE enabled -----*/
 #define CHECKSUM_BY_HARDWARE 1
 /*-----------------------------------------------------------------------------*/
@@ -133,6 +135,8 @@
 #define DEFAULT_ACCEPTMBOX_SIZE 6
 /*----- Value in opt.h for RECV_BUFSIZE_DEFAULT: INT_MAX -----*/
 #define RECV_BUFSIZE_DEFAULT 2000000000
+/*----- Default Value for LWIP_USE_EXTERNAL_MBEDTLS: 0 ---*/
+#define LWIP_USE_EXTERNAL_MBEDTLS 1
 /*----- Default Value for LWIP_HTTPD: 0 ---*/
 #define LWIP_HTTPD 1
 /*----- Default Value for LWIP_HTTPD_CGI_SSI: 0 ---*/
