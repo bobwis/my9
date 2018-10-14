@@ -34,6 +34,11 @@ typedef uint8_t byte;
 #define PC_BAUDRATE 9600L
 
 extern UART_HandleTypeDef huart6;
+
+struct tm now;		// gps time updated every second
+time_t epochtime;	// gps time updated every second
+
+
 static const unsigned char UBXGPS_HEADER[] = { 0xB5, 0x62, 0x01, 0x07 };
 
 unsigned char PACKETstore[92];  //TODO, whats the max size of packet?
@@ -105,22 +110,26 @@ uint32_t calcepoch()
 #endif
 
 #if 1	// new version below
+struct tm* getgpstime()
+{
+    now.tm_year = statuspkt.NavPvt.year - 1900;
+    now.tm_mon = statuspkt.NavPvt.month-1;           // Month, 0 - jan
+    now.tm_mday = statuspkt.NavPvt.day;          // Day of the month
+    now.tm_hour = statuspkt.NavPvt.hour;
+    now.tm_min = statuspkt.NavPvt.min;
+    now.tm_sec = statuspkt.NavPvt.sec;
+    now.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+    return(&now);
+}
+
 // calculate epoch seconds from 1970 to now using GPS date time fields
 // the number of seconds that have elapsed since January 1, 1970 (midnight UTC/GMT), not counting leap seconds
 uint32_t calcepoch()
 {
-struct tm t;
-    time_t epochtime;
 
-    t.tm_year = statuspkt.NavPvt.year - 1900;
-    t.tm_mon = statuspkt.NavPvt.month-1;           // Month, 0 - jan
-    t.tm_mday = statuspkt.NavPvt.day;          // Day of the month
-    t.tm_hour = statuspkt.NavPvt.hour;
-    t.tm_min = statuspkt.NavPvt.min;
-    t.tm_sec = statuspkt.NavPvt.sec;
-    t.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
-    epochtime = mktime(&t);
-//    printf("Epoch2=%ld\n", (long) epochtime);
+    epochtime = mktime(getgpstime());
+
+//    printf("Epoch=%ld\n", (long) epochtime);
     return((uint32_t)epochtime);
 }
 #endif

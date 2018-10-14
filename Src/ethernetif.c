@@ -309,7 +309,7 @@ static void low_level_init(struct netif *netif)
   HAL_ETH_Start(&heth);
 
 /* USER CODE BEGIN PHY_PRE_CONFIG */ 
-    
+
 /* USER CODE END PHY_PRE_CONFIG */
   
 

@@ -1,0 +1,10 @@
+      /* Set the DMA Tx descriptors checksum insertion */
+// yyy      dmatxdesc->Status |= ETH_DMATXDESC_CHECKSUMTCPUDPICMPFULL;
+//      dmatxdesc->Status |= ETH_DMATXDESC_CHECKSUMTCPUDPICMPSEGMENT;
+      dmatxdesc->Status |= ETH_DMATXDESC_CHECKSUMIPV4HEADER;
+	  
+	  
+	  arm-none-eabi-objcopy -O ihex "${BuildArtifactFileBaseName}.elf" "${BuildArtifactFileBaseName}.hex" && arm-none-eabi-size "${BuildArtifactFileName}"
+	  
+	  
+	  arm-none-eabi-objcopy -O ihex "${BuildArtifactFileBaseName}.elf" "${BuildArtifactFileBaseName}.hex" && arm-none-eabi-size "${BuildArtifactFileName}" && arm-none-eabi-objcopy  "${BuildArtifactFileBaseName}.elf" -O binary “${BuildArtifactFileBaseName}.bin” 

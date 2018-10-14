@@ -55,12 +55,17 @@
 #include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
+#include <time.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "netif.h"
 #include "adcstream.h"
 #include "neo7m.h"
 #include "mydebug.h"
 #include "ip4.h"
+#include "lwipopts.h"
 #include "lwip/prot/dhcp.h"
+
 #include "udpstream.h"
 #include "version.h"
 #include "www.h"
@@ -360,9 +365,6 @@ static void MX_NVIC_Init(void)
   /* USART6_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(USART6_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(USART6_IRQn);
-  /* DMA2_Stream4_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream4_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream4_IRQn);
   /* ADC_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(ADC_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(ADC_IRQn);
@@ -383,7 +385,7 @@ static void MX_ADC1_Init(void)
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.ScanConvMode = DISABLE;
+  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
@@ -430,7 +432,7 @@ static void MX_ADC2_Init(void)
   hadc2.Instance = ADC2;
   hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc2.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc2.Init.ScanConvMode = DISABLE;
+  hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc2.Init.ContinuousConvMode = ENABLE;
   hadc2.Init.DiscontinuousConvMode = DISABLE;
   hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
@@ -465,7 +467,7 @@ static void MX_ADC3_Init(void)
   hadc3.Instance = ADC3;
   hadc3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc3.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc3.Init.ScanConvMode = DISABLE;
+  hadc3.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc3.Init.ContinuousConvMode = ENABLE;
   hadc3.Init.DiscontinuousConvMode = DISABLE;
   hadc3.Init.DataAlign = ADC_DATAALIGN_RIGHT;
@@ -820,11 +822,14 @@ static void MX_DMA_Init(void)
   HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
   /* DMA1_Stream5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
   /* DMA2_Stream1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
+  /* DMA2_Stream4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream4_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream4_IRQn);
 
 }
 
@@ -1085,7 +1090,13 @@ void setupnotify() {
 
 /* USER CODE END 4 */
 
-/* StartDefaultTask function */
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used 
+  * @retval None
+  */
+/* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void const * argument)
 {
   /* init code for USB_DEVICE */
@@ -1201,13 +1212,20 @@ void StartDefaultTask(void const * argument)
   /* USER CODE END 5 */ 
 }
 
-/* StarLPTask function */
+/* USER CODE BEGIN Header_StarLPTask */
+/**
+* @brief Function implementing the LPTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StarLPTask */
 void StarLPTask(void const * argument)
 {
   /* USER CODE BEGIN StarLPTask */
 	static uint32_t trigs = 0;
 	static uint16_t beeptimeout = 0;
 	uint32_t reqtimer = 8000;
+	uint32_t debugtimer = 0;
 	int counter = 0;
 	char stmuid[64] = { 0 };
 
@@ -1225,6 +1243,7 @@ void StarLPTask(void const * argument)
 	for (;;) {
 		tcp_tmr();
 		reqtimer++;
+		debugtimer++;
 		osDelay(1);
 		if (statuspkt.trigcount > (3600 + trigs))// spamming: 3600 packets sent in 2 Sec (out of approx 7.2K packets)
 				{
@@ -1253,10 +1272,17 @@ void StarLPTask(void const * argument)
 				reqtimer = 0;
 				printf("Try to get new S/N using http client. Try=%d\n", ++counter);
 				httpclient(stmuid);		// zzz testing
-//				stats_display() ; // this needs stats in LwIP enabling to do anything
+				//stats_display() ; // this needs stats in LwIP enabling to do anything
 			}
 
 		}
+	if (debugtimer > 30000)
+	{
+		debugtimer = 0;
+		stats_display();
+		printf("triggers=%04d  ------------------------------------------- %s",trigs,ctime(&epochtime));
+	}
+
 	}
   /* USER CODE END StarLPTask */
 }

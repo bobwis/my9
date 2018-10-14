@@ -60,6 +60,39 @@
 
 /* Within 'USER CODE' section, code will be kept by default at each generation */
 /* USER CODE BEGIN 0 */
+#define LWIP_DEBUG 0
+#define LWIP_STATS 0
+
+#define LWIP_PLATFORM_DIAG(x) do {printf x;} while(0)
+
+
+#define LWIP_DBG_TRACE
+
+
+#define LWIP_DBG_TYPES_ON 0x78U
+//#define UDP_DEBUG LWIP_DBG_ON	// trace udp
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#define LINK_STATS                      0
+#define ETHARP_STATS                    1
+#define IP_STATS                        1
+#define IPFRAG_STATS                    1
+#define ICMP_STATS                      0
+#define IGMP_STATS                      0
+#define UDP_STATS                       1
+#define TCP_STATS                       0
+#define MEM_STATS                       0
+#define MEMP_STATS                      0
+#define SYS_STATS                       0
+#define LWIP_STATS_DISPLAY              1
+#define IP6_STATS                       0
+#define ICMP6_STATS                     0
+#define IP6_FRAG_STATS                  0
+#define MLD6_STATS                      0
+#define ND6_STATS                       0
+#define MIB2_STATS                      0
 
 /* USER CODE END 0 */
 
@@ -81,7 +114,7 @@
 /* Parameters set in STM32CubeMX LwIP Configuration GUI -*/
 /*----- Value in opt.h for LWIP_DHCP: 0 -----*/
 #define LWIP_DHCP 1
-/*----- Default Value for LWIP_DNS: 0 ---*/
+/*----- Value in opt.h for LWIP_DNS: 0 -----*/
 #define LWIP_DNS 1
 /*----- Value in opt.h for MEM_ALIGNMENT: 1 -----*/
 #define MEM_ALIGNMENT 4
@@ -95,6 +128,12 @@
 #define MEMP_NUM_TCP_PCB_LISTEN 16
 /*----- Default Value for PBUF_POOL_SIZE: 16 ---*/
 #define PBUF_POOL_SIZE 32
+/*----- Default Value for ARP_TABLE_SIZE: 10 ---*/
+#define ARP_TABLE_SIZE 32
+/*----- Default Value for ARP_QUEUEING: 0 ---*/
+#define ARP_QUEUEING 1
+/*----- Default Value for ARP_QUEUE_LEN: 3 ---*/
+#define ARP_QUEUE_LEN 32
 /*----- Value in opt.h for LWIP_ETHERNET: LWIP_ARP || PPPOE_SUPPORT -*/
 #define LWIP_ETHERNET 1
 /*----- Default Value for LWIP_RAW: 0 ---*/
@@ -134,8 +173,8 @@
 /*----- Value in opt.h for DEFAULT_ACCEPTMBOX_SIZE: 0 -----*/
 #define DEFAULT_ACCEPTMBOX_SIZE 6
 /*----- Value in opt.h for RECV_BUFSIZE_DEFAULT: INT_MAX -----*/
-#define RECV_BUFSIZE_DEFAULT 2000000000
-/*----- Default Value for LWIP_USE_EXTERNAL_MBEDTLS: 0 ---*/
+#define RECV_BUFSIZE_DEFAULT 20000
+/*----- Value in opt.h for LWIP_USE_EXTERNAL_MBEDTLS: 0 -----*/
 #define LWIP_USE_EXTERNAL_MBEDTLS 1
 /*----- Default Value for LWIP_HTTPD: 0 ---*/
 #define LWIP_HTTPD 1
@@ -175,14 +214,6 @@
 #define CHECKSUM_CHECK_ICMP 0
 /*----- Value in opt.h for CHECKSUM_CHECK_ICMP6: 1 -----*/
 #define CHECKSUM_CHECK_ICMP6 0
-/*----- Default Value for LWIP_DBG_MIN_LEVEL: LWIP_DBG_LEVEL_ALL ---*/
-#define LWIP_DBG_MIN_LEVEL LWIP_DBG_LEVEL_WARNING
-/*----- Default Value for PBUF_DEBUG: LWIP_DBG_OFF ---*/
-#define PBUF_DEBUG LWIP_DBG_ON
-/*----- Default Value for MEM_DEBUG: LWIP_DBG_OFF ---*/
-#define MEM_DEBUG LWIP_DBG_ON
-/*----- Default Value for MEMP_DEBUG: LWIP_DBG_OFF ---*/
-#define MEMP_DEBUG LWIP_DBG_ON
 /*-----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
 #define MEMP_OVERFLOW_CHECK 2
@@ -192,6 +223,6 @@
 #ifdef __cplusplus
 }
 #endif
-#endif /*__LWIPOPTS__H_H */
+#endif /*__LWIPOPTS__H__ */
 
 /************************* (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

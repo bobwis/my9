@@ -17,9 +17,9 @@
 #endif
 
 #ifdef TESTING
-#define MY_UID 1051	// 16 bits  "serial number" of the lightning detector
+#define MY_UID 1071	// 16 bits  "serial number" of the lightning detector
 #else
-#define MY_UID 1002	// 16 bits  "serial number" of the lightning detector
+#define MY_UID 1021	// 16 bits  "serial number" of the lightning detector
 #endif
 
 #endif /* VERSION_H_ */
