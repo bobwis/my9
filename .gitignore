@@ -58,4 +58,5 @@ NUCLEO-F767ZI.xml
 *.list
 
 
-/Debug/
+Debug/
+.settings/language.settings.xml
